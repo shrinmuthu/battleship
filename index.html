@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Yacht Battle — Regatta Warfare</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="screen-setup" class="screen active">
+    <header class="hero">
+      <h1>Yacht Battle</h1>
+      <p class="tagline">Hunt down the enemy fleet of yachts before they sink yours.</p>
+    </header>
+
+    <div class="panel setup-panel">
+      <div class="field">
+        <label for="player-name">Your name</label>
+        <input id="player-name" type="text" maxlength="18" placeholder="e.g. Skipper Sam" autocomplete="off" />
+        <p class="error" id="name-error" hidden>Please enter your name to set sail.</p>
+      </div>
+
+      <div class="chooser-grid">
+        <div class="chooser">
+          <h2>Your character</h2>
+          <div class="avatar-preview">
+            <img id="preview-player" alt="Your chosen character" />
+          </div>
+          <div class="avatar-options" id="options-player" role="radiogroup" aria-label="Choose your character"></div>
+          <label class="upload-btn">
+            Upload your own image
+            <input type="file" id="upload-player" accept="image/*" hidden />
+          </label>
+          <p class="error" id="upload-player-error" hidden></p>
+        </div>
+
+        <div class="chooser">
+          <h2>Opponent character</h2>
+          <div class="avatar-preview">
+            <img id="preview-ai" alt="Opponent character" />
+          </div>
+          <div class="avatar-options" id="options-ai" role="radiogroup" aria-label="Choose the opponent character"></div>
+          <label class="upload-btn">
+            Upload your own image
+            <input type="file" id="upload-ai" accept="image/*" hidden />
+          </label>
+          <p class="error" id="upload-ai-error" hidden></p>
+        </div>
+      </div>
+
+      <div class="rules">
+        <h3>Fleet &amp; weapons</h3>
+        <ul>
+          <li>Each admiral commands 5 yachts: Mega Yacht (5), Super Yacht (4), Cruiser Yacht (3), Sport Yacht (3), Dinghy (2).</li>
+          <li>Every turn: one normal shot <em>or</em> one bomb — never both.</li>
+          <li>You each get <strong>2 bombs</strong>. A bomb strikes a plus-shaped 5-cell area.</li>
+        </ul>
+      </div>
+
+      <button id="btn-start" class="primary">Start the regatta</button>
+    </div>
+  </section>
+
+  <!-- ============ PLACEMENT SCREEN ============ -->
+  <section id="screen-placement" class="screen">
+    <header class="hero small">
+      <h1>Moor your yachts</h1>
+      <p class="tagline">Drag a yacht to move it, click it to rotate — or let the harbour master arrange them.</p>
+    </header>
+
+    <div class="placement-wrap">
+      <div class="board-card">
+        <h2 class="board-title">
+          <img class="mini-avatar" id="placement-avatar" alt="" />
+          <span id="placement-name">Your waters</span>
+        </h2>
+        <div class="board" id="board-placement" aria-label="Your fleet placement board"></div>
+      </div>
+
+      <div class="panel placement-side">
+        <h3>Your fleet</h3>
+        <ul class="fleet-list" id="placement-fleet"></ul>
+        <button id="btn-randomize" class="secondary">Randomize placement</button>
+        <button id="btn-confirm-placement" class="primary">Set sail</button>
+        <p class="hint">Yachts may not overlap or leave the 10 × 10 grid.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="screen-game" class="screen">
+    <div class="topbar">
+      <div class="player-chip">
+        <img class="chip-avatar" id="chip-player-img" alt="" />
+        <div>
+          <div class="chip-name" id="chip-player-name">You</div>
+          <div class="chip-sub">Yachts afloat: <span id="chip-player-ships">5</span></div>
+        </div>
+      </div>
+      <div class="turn-banner" id="turn-banner">Your turn</div>
+      <div class="player-chip right">
+        <div>
+          <div class="chip-name" id="chip-ai-name">Rival</div>
+          <div class="chip-sub">Yachts afloat: <span id="chip-ai-ships">5</span></div>
+        </div>
+        <img class="chip-avatar" id="chip-ai-img" alt="" />
+      </div>
+    </div>
+
+    <div class="game-grid">
+      <div class="board-card">
+        <h2 class="board-title">Enemy waters</h2>
+        <div class="board" id="board-enemy" aria-label="Enemy waters — click to fire"></div>
+        <div class="weapon-bar">
+          <button class="weapon active" id="weapon-shot" data-weapon="shot">
+            <span class="weapon-icon">🎯</span> Normal shot
+          </button>
+          <button class="weapon" id="weapon-bomb" data-weapon="bomb">
+            <span class="weapon-icon">💣</span> Bomb <span class="badge" id="player-bombs">2</span>
+          </button>
+        </div>
+        <ul class="fleet-list compact" id="enemy-fleet"></ul>
+      </div>
+
+      <div class="center-column">
+        <div class="panel log-panel">
+          <h3>Battle log</h3>
+          <ul id="log" class="log"></ul>
+        </div>
+        <div class="panel stats-panel">
+          <h3>Opponent live stats</h3>
+          <dl class="stats">
+            <div><dt>Shots taken</dt><dd id="ai-shots">0</dd></div>
+            <div><dt>Cells hit</dt><dd id="ai-hits">0</dd></div>
+            <div><dt>Cells missed</dt><dd id="ai-misses">0</dd></div>
+            <div><dt>Hit / miss ratio</dt><dd id="ai-ratio">—</dd></div>
+            <div><dt>Accuracy</dt><dd id="ai-accuracy">0%</dd></div>
+            <div><dt>Yachts sunk</dt><dd id="ai-sunk">0</dd></div>
+            <div><dt>Bombs left</dt><dd id="ai-bombs">2</dd></div>
+          </dl>
+          <h3 class="mt">Your stats</h3>
+          <dl class="stats">
+            <div><dt>Shots taken</dt><dd id="you-shots">0</dd></div>
+            <div><dt>Accuracy</dt><dd id="you-accuracy">0%</dd></div>
+            <div><dt>Yachts sunk</dt><dd id="you-sunk">0</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="board-card">
+        <h2 class="board-title">Your waters</h2>
+        <div class="board" id="board-own" aria-label="Your waters"></div>
+        <ul class="fleet-list compact" id="own-fleet"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ END OVERLAY ============ -->
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <img id="overlay-avatar" alt="" class="overlay-avatar" />
+      <h2 id="overlay-title">Victory!</h2>
+      <p id="overlay-text"></p>
+      <dl class="stats final" id="overlay-stats"></dl>
+      <button id="btn-rematch" class="primary">Play again</button>
+    </div>
+  </div>
+
+</div>
+<script src="game.js"></script>
+</body>
+</html>

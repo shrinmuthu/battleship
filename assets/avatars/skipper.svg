@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Skipper Kai">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e2233"/>
+      <stop offset="100%" stop-color="#17394f"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#bg3)"/>
+  <circle cx="100" cy="168" r="62" fill="#5c4a1b"/>
+  <path d="M60 200 q40 -26 80 0z" fill="#5c4a1b"/>
+  <rect x="94" y="112" width="12" height="26" fill="#a86b3c"/>
+  <circle cx="100" cy="92" r="42" fill="#a86b3c"/>
+  <circle cx="86" cy="90" r="5" fill="#22303f"/>
+  <circle cx="114" cy="90" r="5" fill="#22303f"/>
+  <path d="M86 110 q14 12 28 0" stroke="#22303f" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M56 70 q44 -30 88 0 l0 12 q-44 -14 -88 0z" fill="#3d2f0d"/>
+  <path d="M144 76 l22 10 -20 8 -6 -14z" fill="#3d2f0d"/>
+  <circle cx="76" cy="72" r="4" fill="#ffffff" opacity="0.6"/>
+  <circle cx="112" cy="66" r="4" fill="#ffffff" opacity="0.6"/>
+</svg>
