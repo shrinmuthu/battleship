@@ -739,7 +739,7 @@ button { font-family: inherit; }
   gap: clamp(16px, 2vw, 40px);
   align-items: start;
 }
-@media (max-width: 620px) {
+@media (max-width: 680px) {
   .topbar { flex-wrap: wrap; justify-content: center; gap: 12px; padding: 12px 14px; }
   .player-chip { flex: 1 1 45%; min-width: 0; gap: 10px; }
   .player-chip.right { justify-content: flex-end; }
