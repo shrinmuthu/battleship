@@ -37,6 +37,13 @@ python3 -m http.server 8000
 3. Arrange your fleet (drag to move, click to turn, or let the harbour master arrange it),
    then set sail.
 
+## Sound
+
+Two toggles sit in the top-right corner: **Sound** (arrow, catapult, sinking and end-of-battle
+effects, on by default) and **Lyre** (a looping lyre-and-drone background theme, off by default).
+Both are synthesised live with the Web Audio API — there are no audio files — and each choice is
+remembered in `localStorage` (`odyssey.sfx.v1`, `odyssey.music.v1`).
+
 ## Player records
 
 Records are stored in `localStorage` under `odyssey.captains.v1`, keyed by the lower-cased name,
@@ -63,5 +70,6 @@ leaving mid-battle asks for confirmation and records nothing.
 | `index.html` | Markup for the setup, placement and game screens, plus the decorative layer |
 | `styles.css` | All styling, animated decor and responsive layout |
 | `game.js` | Game model, rendering, AI, turn flow and localStorage records |
+| `audio.js` | Web Audio synthesis for the sound effects and the lyre theme |
 | `assets/avatars/` | Default Greek character avatars (SVG) |
 | `BUGS.md` | Bugs found during testing and how they were fixed |

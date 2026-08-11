@@ -536,13 +536,24 @@
     }, kind === "smoke" ? 2200 : 1400);
   }
 
+  function sound(name) {
+    if (window.OdysseyAudio) window.OdysseyAudio.play(name);
+  }
+
   function playImpacts(boardEl, results, weapon) {
+    var loudest = null;
     results.forEach(function (res) {
       var kind = res.result === "hit"
         ? (weapon === "bomb" ? "boom" : "blood")
         : (weapon === "bomb" ? "smoke" : "splash");
       spawnFx(boardEl, res.r, res.c, kind);
+      // one voice per volley: a hit outranks a miss
+      if (!loudest || (res.result === "hit" && loudest !== "boom" && loudest !== "blood")) loudest = kind;
     });
+    if (loudest) sound(loudest);
+    if (results.some(function (res) { return res.sunk; })) {
+      setTimeout(function () { sound("sink"); }, 260);
+    }
   }
 
   function renderBoard(boardEl, board, showShips) {
@@ -854,10 +865,16 @@
     state.turn = "ai";
     state.busy = true;
     refreshGame();
-    setTimeout(aiTurn, 850);
+    aiTimer = setTimeout(aiTurn, 850);
   }
 
   // ---------------------------------------------------------------- AI
+  var aiTimer = null;
+
+  function cancelAiTurn() {
+    if (aiTimer) { clearTimeout(aiTimer); aiTimer = null; }
+  }
+
   function unknownCells(board) {
     var out = [];
     for (var r = 0; r < SIZE; r++) {
@@ -1081,11 +1098,13 @@
   function finish(winner) {
     state.over = true;
     state.busy = false;
+    cancelAiTurn();
     refreshGame();
     renderBoard($("board-enemy"), state.aiBoard, true);
     $("board-enemy").classList.remove("interactive", "bomb-mode");
 
     var youWon = winner === "player";
+    if (winner !== "draw") setTimeout(function () { sound(youWon ? "victory" : "defeat"); }, 500);
     $("overlay-title").textContent = youWon
       ? "The gods favour you!"
       : (winner === "ai" ? "Your fleet lies in ruins" : "The seas fall still");
@@ -1145,6 +1164,7 @@
       var ok = window.confirm("Leave this battle? The current game will be lost and no record is kept.");
       if (!ok) return;
     }
+    cancelAiTurn();
     if (state) { state.busy = true; state.over = true; }
     $("overlay").hidden = true;
     showScreen("screen-setup");
@@ -1160,6 +1180,7 @@
   }
 
   function goToPlacement(name, playerAvatar, aiAvatar) {
+    cancelAiTurn();
     state = freshState();
     state.playerName = name;
     state.playerAvatar = playerAvatar;
@@ -1171,6 +1192,10 @@
 
     randomizeBoard(state.playerBoard);
     randomizeBoard(state.aiBoard);
+
+    // clear the previous battle's boards so nothing from it can paint on the way in
+    renderBoard($("board-enemy"), state.aiBoard, false);
+    renderBoard($("board-own"), state.playerBoard, true);
 
     $("placement-avatar").src = state.playerAvatar;
     $("placement-name").textContent = state.playerName + "'s waters";
@@ -1197,9 +1222,32 @@
   }
 
   // ---------------------------------------------------------------- wiring
+  function initAudioControls() {
+    var audio = window.OdysseyAudio;
+    if (!audio) return;
+
+    var pairs = [
+      { el: $("toggle-sfx"), on: audio.sfxEnabled(), set: audio.setSfx },
+      { el: $("toggle-music"), on: audio.musicEnabled(), set: audio.setMusic }
+    ];
+
+    pairs.forEach(function (pair) {
+      pair.el.setAttribute("aria-pressed", pair.on ? "true" : "false");
+      pair.el.addEventListener("click", function () {
+        var next = pair.el.getAttribute("aria-pressed") !== "true";
+        pair.el.setAttribute("aria-pressed", next ? "true" : "false");
+        pair.set(next);
+      });
+    });
+
+    // browsers only allow audio to start from a gesture
+    document.addEventListener("click", function () { audio.wake(); });
+  }
+
   function init() {
     state = freshState();
 
+    initAudioControls();
     buildDifficultyOptions();
     renderScoreboard();
     buildAvatarOptions("player");

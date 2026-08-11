@@ -11,6 +11,23 @@
 </head>
 <body>
 
+<div class="audio-bar">
+  <button type="button" class="audio-toggle" id="toggle-sfx" aria-pressed="true">
+    <span class="audio-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7"/><path class="slash" d="M17 8l5 8"/></g></svg>
+    </span>
+    <span class="audio-label">Sound</span>
+  </button>
+  <button type="button" class="audio-toggle" id="toggle-music" aria-pressed="false">
+    <span class="audio-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/><path class="slash" d="M4 4l16 16"/></g></svg>
+    </span>
+    <span class="audio-label">Lyre</span>
+  </button>
+</div>
+
 <!-- ============ AMBIENT DECOR (purely decorative, never interactive) ============ -->
 <div class="decor" aria-hidden="true">
   <div class="decor-sky"></div>
@@ -306,6 +323,7 @@
   </div>
 
 </div>
+<script src="audio.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
