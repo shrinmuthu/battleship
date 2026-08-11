@@ -1,30 +1,41 @@
-/* Yacht Battle — a Battleship-style game with yachts, bombs and an AI rival.
+/* Odyssey — a Battleship-style game set in Ancient Greece.
+   Vessels are Greek ships, normal shots are arrows and bombs are catapult volleys.
    Single-file vanilla JS, no build tools. */
 (function () {
   "use strict";
 
   var SIZE = 10;
-  var BOMBS_PER_PLAYER = 2;
+  var CATAPULTS_PER_PLAYER = 2;
   var LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+  var STORAGE_KEY = "odyssey.captains.v1";
 
   var FLEET = [
-    { id: "mega", name: "Mega Yacht", size: 5 },
-    { id: "super", name: "Super Yacht", size: 4 },
-    { id: "cruiser", name: "Cruiser Yacht", size: 3 },
-    { id: "sport", name: "Sport Yacht", size: 3 },
-    { id: "dinghy", name: "Dinghy", size: 2 }
+    { id: "argo", name: "Argo", size: 5 },
+    { id: "trireme", name: "War Trireme", size: 4 },
+    { id: "bireme", name: "Bireme", size: 3 },
+    { id: "galley", name: "Merchant Galley", size: 3 },
+    { id: "skiff", name: "Fishing Skiff", size: 2 }
   ];
 
   var DEFAULT_AVATARS = [
-    { id: "captain", name: "Captain Marlow", src: "assets/avatars/captain.svg" },
-    { id: "admiral", name: "Admiral Reyes", src: "assets/avatars/admiral.svg" },
-    { id: "navigator", name: "Navigator Wren", src: "assets/avatars/navigator.svg" },
-    { id: "skipper", name: "Skipper Kai", src: "assets/avatars/skipper.svg" },
-    { id: "commodore", name: "Commodore Vale", src: "assets/avatars/commodore.svg" },
-    { id: "corsair", name: "Corsair Nix", src: "assets/avatars/corsair.svg" }
+    { id: "odysseus", name: "Odysseus", src: "assets/avatars/odysseus.svg" },
+    { id: "athena", name: "Athena", src: "assets/avatars/athena.svg" },
+    { id: "poseidon", name: "Poseidon", src: "assets/avatars/poseidon.svg" },
+    { id: "circe", name: "Circe", src: "assets/avatars/circe.svg" },
+    { id: "achilles", name: "Achilles", src: "assets/avatars/achilles.svg" },
+    { id: "hermes", name: "Hermes", src: "assets/avatars/hermes.svg" }
   ];
 
   var MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+  var SHIP_ICON =
+    '<svg class="ship-icon" viewBox="0 0 60 34" aria-hidden="true">' +
+    '<path d="M4 20 h52 l-8 11 h-36z" fill="#b8946a"/>' +
+    '<path d="M30 2 l0 17" stroke="#8a6742" stroke-width="3" stroke-linecap="round"/>' +
+    '<path d="M31 4 q14 6 0 13z" fill="#e8c96a"/>' +
+    '<path d="M29 4 q-14 6 0 13z" fill="#f3ecdd" opacity="0.85"/>' +
+    '<path d="M4 20 l-4 -5 6 1z" fill="#e8c96a"/>' +
+    "</svg>";
 
   // ---------------------------------------------------------------- helpers
   function $(id) { return document.getElementById(id); }
@@ -50,6 +61,89 @@
     return String(s).replace(/[&<>"']/g, function (ch) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
     });
+  }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+
+  // ---------------------------------------------------------------- captain records (localStorage)
+  function loadRecords() {
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === "object") ? parsed : {};
+    } catch (err) {
+      return {}; // private mode / corrupted data — play on without persistence
+    }
+  }
+
+  function saveRecords(records) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    } catch (err) {
+      /* storage unavailable — stats simply won't persist */
+    }
+  }
+
+  function recordKey(name) { return name.trim().toLowerCase(); }
+
+  function getRecord(name) {
+    var key = recordKey(name);
+    if (!key) return null;
+    var rec = loadRecords()[key];
+    if (!rec) return null;
+    return {
+      name: rec.name || name,
+      wins: rec.wins || 0,
+      losses: rec.losses || 0,
+      streak: rec.streak || 0,          // positive = win streak, negative = loss streak
+      bestStreak: rec.bestStreak || 0,
+      lastPlayed: rec.lastPlayed || null
+    };
+  }
+
+  function updateRecord(name, won) {
+    var key = recordKey(name);
+    if (!key) return null;
+    var records = loadRecords();
+    var rec = records[key] || { name: name, wins: 0, losses: 0, streak: 0, bestStreak: 0 };
+    rec.name = name;
+    if (won) {
+      rec.wins++;
+      rec.streak = rec.streak > 0 ? rec.streak + 1 : 1;
+      if (rec.streak > rec.bestStreak) rec.bestStreak = rec.streak;
+    } else {
+      rec.losses++;
+      rec.streak = rec.streak < 0 ? rec.streak - 1 : -1;
+    }
+    rec.lastPlayed = new Date().toISOString();
+    records[key] = rec;
+    saveRecords(records);
+    return rec;
+  }
+
+  function streakText(rec) {
+    if (!rec || !rec.streak) return "No streak yet.";
+    if (rec.streak > 0) return "Current streak: " + plural(rec.streak, "win", "wins") + " in a row.";
+    return "Current streak: " + plural(-rec.streak, "loss", "losses") + " in a row.";
+  }
+
+  function recordSummary(rec) {
+    return plural(rec.wins, "win", "wins") + " · " + plural(rec.losses, "loss", "losses") +
+      (rec.bestStreak > 1 ? " · best streak " + rec.bestStreak : "");
+  }
+
+  function showWelcomeBack(name) {
+    var box = $("welcome-back");
+    var rec = getRecord(name);
+    if (!rec || (rec.wins === 0 && rec.losses === 0)) {
+      box.hidden = true;
+      box.innerHTML = "";
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML =
+      "Welcome back, <strong>" + escapeHtml(rec.name) + "</strong> — the herald remembers you." +
+      "<span class='record'>" + escapeHtml(recordSummary(rec)) + ". " + escapeHtml(streakText(rec)) + "</span>";
   }
 
   // ---------------------------------------------------------------- model
@@ -118,7 +212,7 @@
     return board;
   }
 
-  /* Fire a single cell. Returns null when the cell was already resolved. */
+  /* Fire on a single cell. Returns null when the cell was already resolved. */
   function fireAt(board, r, c) {
     var i = idx(r, c);
     if (board.shots[i] !== null) return null;
@@ -144,22 +238,22 @@
 
   function freshState() {
     return {
-      playerName: "Skipper",
+      playerName: "Captain",
       playerAvatar: DEFAULT_AVATARS[0].src,
+      playerAvatarName: DEFAULT_AVATARS[0].name,
       aiAvatar: DEFAULT_AVATARS[1].src,
       aiName: "Rival",
-      playerBoard: createBoard(),   // holds the player's yachts, shot at by the AI
-      aiBoard: createBoard(),       // holds the AI's yachts, shot at by the player
+      playerBoard: createBoard(),   // the player's fleet, attacked by the AI
+      aiBoard: createBoard(),       // the AI's fleet, attacked by the player
+      playerCatapults: CATAPULTS_PER_PLAYER,
+      aiCatapults: CATAPULTS_PER_PLAYER,
       turn: "player",
-      playerBombs: BOMBS_PER_PLAYER,
-      aiBombs: BOMBS_PER_PLAYER,
       busy: false,
       over: false,
       weapon: "shot",
       ai: {
         targets: [],        // queue of promising cells {r,c}
-        hitStack: [],       // unresolved hits belonging to a live yacht
-        lastOrigin: null,
+        hitStack: [],       // unresolved hits belonging to a live vessel
         shots: 0, hits: 0, misses: 0, sunk: 0, turns: 0
       },
       you: { shots: 0, hits: 0, misses: 0, sunk: 0, turns: 0 }
@@ -168,6 +262,10 @@
 
   // ---------------------------------------------------------------- avatars
   var chosen = { player: DEFAULT_AVATARS[0].src, ai: DEFAULT_AVATARS[1].src };
+
+  function avatarMeta(src) {
+    return DEFAULT_AVATARS.filter(function (a) { return a.src === src; })[0] || null;
+  }
 
   function buildAvatarOptions(which) {
     var container = $("options-" + which);
@@ -190,6 +288,8 @@
   function selectAvatar(which, src) {
     chosen[which] = src;
     $("preview-" + which).src = src;
+    var meta = avatarMeta(src);
+    $("name-" + which).textContent = meta ? meta.name : "Your own image";
     Array.prototype.forEach.call($("options-" + which).children, function (btn) {
       var on = btn.dataset.src === src;
       btn.classList.toggle("selected", on);
@@ -205,13 +305,13 @@
       err.hidden = true;
       if (!file) return;
       if (!/^image\//.test(file.type)) {
-        err.textContent = "That file is not an image — please pick a PNG, JPG, GIF or SVG.";
+        err.textContent = "That file is not an image — please choose a PNG, JPG, GIF or SVG.";
         err.hidden = false;
         input.value = "";
         return;
       }
       if (file.size > MAX_UPLOAD_BYTES) {
-        err.textContent = "Image is too large (max 4 MB).";
+        err.textContent = "That image is too large (maximum 4 MB).";
         err.hidden = false;
         input.value = "";
         return;
@@ -219,7 +319,7 @@
       var reader = new FileReader();
       reader.onload = function () { selectAvatar(which, reader.result); };
       reader.onerror = function () {
-        err.textContent = "Could not read that file — please try another one.";
+        err.textContent = "That file could not be read — please try another one.";
         err.hidden = false;
       };
       reader.readAsDataURL(file);
@@ -269,14 +369,16 @@
         var shot = board.shots[i];
         var shipId = board.shipAt[i];
         var ship = shipId === null ? null : shipById(board, shipId);
-        el.classList.remove("ship", "hit", "miss", "sunk", "resolved", "preview", "invalid");
-        if (showShips && ship && shot !== "hit") el.classList.add("ship");
-        if (shot === "miss") { el.classList.add("miss", "resolved"); }
+        el.classList.remove("ship", "ship-bow", "hit", "miss", "sunk", "resolved", "preview", "invalid", "blast-preview");
+        if (showShips && ship && shot !== "hit") {
+          el.classList.add("ship");
+          if (ship.cells.length && ship.cells[0].r === r && ship.cells[0].c === c) el.classList.add("ship-bow");
+        }
+        if (shot === "miss") el.classList.add("miss", "resolved");
         if (shot === "hit") {
           el.classList.add("hit", "resolved");
           if (ship && ship.sunk) el.classList.add("sunk");
         }
-        el.disabled = false;
       }
     }
   }
@@ -291,15 +393,15 @@
     });
   }
 
-  function renderFleetList(ul, board, revealNames) {
+  function renderFleetList(ul, board) {
     ul.innerHTML = "";
     board.ships.forEach(function (s) {
       var li = document.createElement("li");
       if (s.sunk) li.classList.add("sunk-item");
       var pips = "";
       for (var i = 0; i < s.size; i++) pips += i < s.hits ? "●" : "○";
-      li.innerHTML = "<span>" + escapeHtml(s.name) + "</span><span class='pips'>" + pips + "</span>";
-      if (!revealNames && !s.sunk) li.title = "Still afloat";
+      li.innerHTML = "<span class='ship-label'>" + SHIP_ICON + escapeHtml(s.name) +
+        " <span class='muted'>(" + s.size + ")</span></span><span class='pips'>" + pips + "</span>";
       ul.appendChild(li);
     });
   }
@@ -308,9 +410,8 @@
   var placement = { drag: null, moved: false };
 
   function renderPlacement() {
-    var boardEl = $("board-placement");
-    renderBoard(boardEl, state.playerBoard, true);
-    renderFleetList($("placement-fleet"), state.playerBoard, true);
+    renderBoard($("board-placement"), state.playerBoard, true);
+    renderFleetList($("placement-fleet"), state.playerBoard);
   }
 
   function placementCellFromEvent(e) {
@@ -378,13 +479,12 @@
             place(state.playerBoard, ship, row, col, ship.horizontal);
           }
         } else {
-          // simple click → rotate around the current anchor if it fits
+          // a plain click turns the vessel around its bow
           var horizontal = !ship.horizontal;
           var r = ship.row, c = ship.col;
           if (canPlace(state.playerBoard, ship, r, c, horizontal)) {
             place(state.playerBoard, ship, r, c, horizontal);
           } else {
-            // nudge back into the grid if rotation overflows
             var nr = Math.min(r, SIZE - (horizontal ? 1 : ship.size));
             var nc = Math.min(c, SIZE - (horizontal ? ship.size : 1));
             if (canPlace(state.playerBoard, ship, nr, nc, horizontal)) {
@@ -432,35 +532,36 @@
     $("ai-ratio").textContent = ratio(ai.hits, ai.misses);
     $("ai-accuracy").textContent = ai.shots ? Math.round((ai.hits / ai.shots) * 100) + "%" : "0%";
     $("ai-sunk").textContent = ai.sunk;
-    $("ai-bombs").textContent = state.aiBombs;
+    $("ai-bombs").textContent = state.aiCatapults;
     $("you-shots").textContent = you.shots;
     $("you-accuracy").textContent = you.shots ? Math.round((you.hits / you.shots) * 100) + "%" : "0%";
     $("you-sunk").textContent = you.sunk;
 
     $("chip-player-ships").textContent = state.playerBoard.ships.filter(function (s) { return !s.sunk; }).length;
     $("chip-ai-ships").textContent = state.aiBoard.ships.filter(function (s) { return !s.sunk; }).length;
-    $("player-bombs").textContent = state.playerBombs;
+    $("player-bombs").textContent = state.playerCatapults;
   }
 
   function updateWeaponUI() {
-    var bombsLeft = state.playerBombs;
+    var left = state.playerCatapults;
     var bombBtn = $("weapon-bomb");
     var shotBtn = $("weapon-shot");
-    bombBtn.disabled = bombsLeft <= 0 || state.over;
-    if (bombsLeft <= 0 && state.weapon === "bomb") state.weapon = "shot";
+    bombBtn.disabled = left <= 0 || state.over;
+    if (left <= 0 && state.weapon === "bomb") state.weapon = "shot";
     bombBtn.classList.toggle("active", state.weapon === "bomb");
     shotBtn.classList.toggle("active", state.weapon === "shot");
-    $("player-bombs").textContent = bombsLeft;
+    $("player-bombs").textContent = left;
+    $("board-enemy").classList.toggle("bomb-mode", state.weapon === "bomb");
   }
 
   function setTurnBanner() {
     var el = $("turn-banner");
     if (state.over) return;
     if (state.turn === "player") {
-      el.textContent = state.playerName + ", take your shot";
+      el.textContent = state.playerName + ", loose your shot";
       el.classList.remove("enemy");
     } else {
-      el.textContent = state.aiName + " is aiming…";
+      el.textContent = state.aiName + " takes aim…";
       el.classList.add("enemy");
     }
   }
@@ -468,8 +569,8 @@
   function refreshGame() {
     renderBoard($("board-enemy"), state.aiBoard, false);
     renderBoard($("board-own"), state.playerBoard, true);
-    renderFleetList($("enemy-fleet"), state.aiBoard, true);
-    renderFleetList($("own-fleet"), state.playerBoard, true);
+    renderFleetList($("enemy-fleet"), state.aiBoard);
+    renderFleetList($("own-fleet"), state.playerBoard);
     updateStats();
     updateWeaponUI();
     setTurnBanner();
@@ -477,18 +578,35 @@
   }
 
   // ---------------------------------------------------------------- player turn
+  function clearBlastPreview() {
+    Array.prototype.forEach.call($("board-enemy").querySelectorAll(".blast-preview"), function (el) {
+      el.classList.remove("blast-preview");
+    });
+  }
+
+  function onEnemyBoardHover(e) {
+    clearBlastPreview();
+    if (state.weapon !== "bomb" || state.over || state.busy || state.turn !== "player") return;
+    var target = e.target.closest ? e.target.closest(".cell") : null;
+    if (!target) return;
+    plusCells(Number(target.dataset.r), Number(target.dataset.c)).forEach(function (p) {
+      var el = cellEl($("board-enemy"), p.r, p.c);
+      if (el && !el.classList.contains("resolved")) el.classList.add("blast-preview");
+    });
+  }
+
   function onEnemyBoardClick(e) {
     var target = e.target.closest ? e.target.closest(".cell") : null;
     if (!target) return;
-    if (state.over) { log("The regatta is over — press Play again for a rematch.", "big"); return; }
-    if (state.busy || state.turn !== "player") { log("Hold on — " + state.aiName + " is still taking a turn.", "you"); return; }
+    if (state.over) { log("The battle is decided — choose Sail again for a new voyage.", "big"); return; }
+    if (state.busy || state.turn !== "player") { log("Patience — " + state.aiName + " is still taking a turn.", "you"); return; }
 
     var r = Number(target.dataset.r), c = Number(target.dataset.c);
     var board = state.aiBoard;
 
     if (state.weapon === "bomb") {
-      if (state.playerBombs <= 0) {
-        log("No bombs left — switching to normal shots.", "you");
+      if (state.playerCatapults <= 0) {
+        log("No catapult volleys remain — switching back to arrows.", "you");
         state.weapon = "shot";
         refreshGame();
         return;
@@ -496,10 +614,10 @@
       var area = plusCells(r, c);
       var fresh = area.filter(function (p) { return board.shots[idx(p.r, p.c)] === null; });
       if (fresh.length === 0) {
-        log("Every cell in that blast zone has already been struck — pick another target.", "you");
+        log("Every cell in that blast area has already been struck — choose another target.", "you");
         return;
       }
-      state.playerBombs--;
+      state.playerCatapults--;
       var results = [];
       fresh.forEach(function (p) {
         var res = fireAt(board, p.r, p.c);
@@ -507,12 +625,13 @@
       });
       state.you.turns++;
       tallyPlayerResults(results);
+      clearBlastPreview();
       flash($("board-enemy"), area);
       var hits = results.filter(function (x) { return x.result === "hit"; }).length;
-      log("💣 You bombed " + coordLabel(r, c) + " — " + hits + " hit" + (hits === 1 ? "" : "s") +
-          " across " + results.length + " cell" + (results.length === 1 ? "" : "s") + ".", "you");
+      log("Catapult volley on " + coordLabel(r, c) + " — " + plural(hits, "hit", "hits") +
+          " across " + plural(results.length, "new cell", "new cells") + ".", "you");
       results.filter(function (x) { return x.sunk; }).forEach(function (x) {
-        log("You sank " + state.aiName + "'s " + x.ship.name + "!", "big");
+        log("You sent " + state.aiName + "'s " + x.ship.name + " to the depths!", "big");
       });
       state.weapon = "shot";
       endPlayerTurn();
@@ -520,15 +639,17 @@
     }
 
     if (board.shots[idx(r, c)] !== null) {
-      log("You already fired at " + coordLabel(r, c) + " — choose a fresh target.", "you");
+      log("You have already struck " + coordLabel(r, c) + " — choose a fresh target.", "you");
       return;
     }
-    var res2 = fireAt(board, r, c);
+    var single = fireAt(board, r, c);
     state.you.turns++;
-    tallyPlayerResults([res2]);
+    tallyPlayerResults([single]);
     flash($("board-enemy"), [{ r: r, c: c }]);
-    log((res2.result === "hit" ? "🎯 Hit at " : "🌊 Splash at ") + coordLabel(r, c) + ".", "you");
-    if (res2.sunk) log("You sank " + state.aiName + "'s " + res2.ship.name + "!", "big");
+    log(single.result === "hit"
+      ? "Your arrow strikes a hull at " + coordLabel(r, c) + "."
+      : "Your arrow falls into open water at " + coordLabel(r, c) + ".", "you");
+    if (single.sunk) log("You sent " + state.aiName + "'s " + single.ship.name + " to the depths!", "big");
     endPlayerTurn();
   }
 
@@ -563,14 +684,13 @@
     return board.ships.reduce(function (m, s) { return (!s.sunk && s.size > m) ? s.size : m; }, 2);
   }
 
-  /* Hunt cell using a parity grid tuned to the smallest yacht still afloat. */
+  /* Hunt on a parity grid tuned to the smallest vessel still afloat. */
   function huntCell(board) {
     var free = unknownCells(board);
     if (free.length === 0) return null;
     var smallest = board.ships.reduce(function (m, s) { return (!s.sunk && s.size < m) ? s.size : m; }, SIZE);
     var parity = free.filter(function (p) { return (p.r + p.c) % smallest === 0; });
     var pool = parity.length ? parity : free;
-    // prefer cells with more unknown room around them
     var best = null, bestScore = -1;
     shuffle(pool).forEach(function (p) {
       var score = 0;
@@ -604,13 +724,13 @@
     if (sameRow) {
       var r = stack[0].r;
       var cols = stack.map(function (p) { return p.c; });
-      var minC = Math.min.apply(null, cols), maxC = Math.max.apply(null, cols);
-      [[r, minC - 1], [r, maxC + 1]].forEach(function (p) { line.push({ r: p[0], c: p[1] }); });
+      line.push({ r: r, c: Math.min.apply(null, cols) - 1 });
+      line.push({ r: r, c: Math.max.apply(null, cols) + 1 });
     } else {
       var c2 = stack[0].c;
       var rows = stack.map(function (p) { return p.r; });
-      var minR = Math.min.apply(null, rows), maxR = Math.max.apply(null, rows);
-      [[minR - 1, c2], [maxR + 1, c2]].forEach(function (p) { line.push({ r: p[0], c: p[1] }); });
+      line.push({ r: Math.min.apply(null, rows) - 1, c: c2 });
+      line.push({ r: Math.max.apply(null, rows) + 1, c: c2 });
     }
     var valid = line.filter(function (p) {
       return inBounds(p.r, p.c) && board.shots[idx(p.r, p.c)] === null;
@@ -622,15 +742,13 @@
     var cells = plusCells(r, c);
     var unknown = cells.filter(function (p) { return board.shots[idx(p.r, p.c)] === null; });
     if (unknown.length === 0) return -1;
-    var score = unknown.length;
-    // a blast next to an unresolved hit is far more valuable
     var adjacency = 0;
     unknown.forEach(function (p) {
       state.ai.hitStack.forEach(function (h) {
         if (Math.abs(h.r - p.r) + Math.abs(h.c - p.c) === 1) adjacency++;
       });
     });
-    return score + adjacency * 3;
+    return unknown.length + adjacency * 3;
   }
 
   function bestBombTarget(board, candidates) {
@@ -644,15 +762,15 @@
 
   /* Decide the AI's move: {type:"shot"|"bomb", r, c} */
   function aiDecide() {
-    var board = state.playerBoard; // AI shoots at the player's board
-    var bombsLeft = state.aiBombs;
+    var board = state.playerBoard; // the AI attacks the player's board
+    var left = state.aiCatapults;
     refineTargets(board);
     state.ai.targets = state.ai.targets.filter(function (p) {
       return inBounds(p.r, p.c) && board.shots[idx(p.r, p.c)] === null;
     });
 
-    if (bombsLeft > 0 && state.ai.hitStack.length > 0) {
-      // A yacht is wounded: a plus blast around the wound often finishes it.
+    if (left > 0 && state.ai.hitStack.length > 0) {
+      // A vessel is wounded: a plus-shaped volley nearby often finishes it.
       var around = [];
       state.ai.hitStack.forEach(function (h) {
         plusCells(h.r, h.c).forEach(function (p) {
@@ -668,13 +786,13 @@
       return { type: "shot", r: t.r, c: t.c };
     }
 
-    // Hunting. Spend a bomb when hunting is dragging on and a big yacht is still out there.
+    // Hunting: spend a volley when the search drags on and a large vessel is still out there.
     var free = unknownCells(board);
-    if (bombsLeft > 0 && state.ai.turns >= 6 && largestAfloat(board) >= 3) {
-      var interiorFree = free.filter(function (p) {
+    if (left > 0 && state.ai.turns >= 6 && largestAfloat(board) >= 3) {
+      var interior = free.filter(function (p) {
         return p.r > 0 && p.r < SIZE - 1 && p.c > 0 && p.c < SIZE - 1;
       });
-      var pick2 = bestBombTarget(board, interiorFree.length ? interiorFree : free);
+      var pick2 = bestBombTarget(board, interior.length ? interior : free);
       if (pick2 && pick2.score >= 5) return { type: "bomb", r: pick2.cell.r, c: pick2.cell.c };
     }
 
@@ -691,7 +809,6 @@
       pushTargetsAround(board, res.r, res.c);
       if (res.sunk) {
         state.ai.sunk++;
-        // drop the sunk yacht's cells from the unresolved stack
         state.ai.hitStack = state.ai.hitStack.filter(function (p) {
           return board.shipAt[idx(p.r, p.c)] !== res.ship.id;
         });
@@ -709,8 +826,8 @@
     if (!move) { finish("draw"); return; }
     state.ai.turns++;
 
-    if (move.type === "bomb" && state.aiBombs > 0) {
-      state.aiBombs--;
+    if (move.type === "bomb" && state.aiCatapults > 0) {
+      state.aiCatapults--;
       var area = plusCells(move.r, move.c);
       var results = [];
       area.forEach(function (p) {
@@ -719,24 +836,25 @@
       });
       flash($("board-own"), area);
       var hits = results.filter(function (x) { return x.result === "hit"; }).length;
-      log("💣 " + state.aiName + " bombed " + coordLabel(move.r, move.c) + " — " + hits +
-          " hit" + (hits === 1 ? "" : "s") + ".", "ai");
+      log(state.aiName + " launches a catapult volley on " + coordLabel(move.r, move.c) +
+          " — " + plural(hits, "hit", "hits") + ".", "ai");
       results.filter(function (x) { return x.sunk; }).forEach(function (x) {
         log(state.aiName + " sank your " + x.ship.name + "!", "big");
       });
     } else {
-      var res2 = fireAt(board, move.r, move.c);
-      if (!res2) { // safety net: never waste a turn on a resolved cell
+      var single = fireAt(board, move.r, move.c);
+      if (!single) { // safety net: never waste a turn on a resolved cell
         var fallback = huntCell(board);
         if (!fallback) { finish("draw"); return; }
-        res2 = fireAt(board, fallback.r, fallback.c);
-        if (!res2) { finish("draw"); return; }
+        single = fireAt(board, fallback.r, fallback.c);
+        if (!single) { finish("draw"); return; }
       }
-      registerAiResult(board, res2);
-      flash($("board-own"), [{ r: res2.r, c: res2.c }]);
-      log(state.aiName + (res2.result === "hit" ? " hits your waters at " : " misses at ") +
-          coordLabel(res2.r, res2.c) + ".", "ai");
-      if (res2.sunk) log(state.aiName + " sank your " + res2.ship.name + "!", "big");
+      registerAiResult(board, single);
+      flash($("board-own"), [{ r: single.r, c: single.c }]);
+      log(single.result === "hit"
+        ? state.aiName + "'s arrow strikes your fleet at " + coordLabel(single.r, single.c) + "."
+        : state.aiName + "'s arrow falls into open water at " + coordLabel(single.r, single.c) + ".", "ai");
+      if (single.sunk) log(state.aiName + " sank your " + single.ship.name + "!", "big");
     }
 
     state.busy = false;
@@ -745,22 +863,32 @@
     refreshGame();
   }
 
-  // ---------------------------------------------------------------- end game
+  // ---------------------------------------------------------------- end of battle
   function finish(winner) {
     state.over = true;
     state.busy = false;
     refreshGame();
     renderBoard($("board-enemy"), state.aiBoard, true);
-    $("board-enemy").classList.remove("interactive");
+    $("board-enemy").classList.remove("interactive", "bomb-mode");
 
     var youWon = winner === "player";
-    $("overlay-title").textContent = youWon ? "Victory at sea!" : (winner === "ai" ? "Your fleet is sunk" : "Stalemate");
+    $("overlay-title").textContent = youWon
+      ? "The gods favour you!"
+      : (winner === "ai" ? "Your fleet lies in ruins" : "The seas fall still");
     $("overlay-avatar").src = youWon ? state.playerAvatar : state.aiAvatar;
     $("overlay-text").textContent = youWon
-      ? state.playerName + " sank every one of " + state.aiName + "'s yachts."
+      ? state.playerName + " sank every vessel of " + state.aiName + ". Bards will sing of this voyage."
       : (winner === "ai"
-        ? state.aiName + " sank all of " + state.playerName + "'s yachts. Better luck next regatta."
-        : "No targets remain on either side.");
+        ? state.aiName + " sank the whole fleet of " + state.playerName + ". Rebuild, and sail again."
+        : "No targets remain on either sea.");
+
+    var streakLine = $("overlay-streak");
+    if (winner === "draw") {
+      streakLine.textContent = "";
+    } else {
+      var rec = updateRecord(state.playerName, youWon);
+      streakLine.textContent = rec ? (recordSummary(rec) + ". " + streakText(rec)) : "";
+    }
 
     var stats = $("overlay-stats");
     stats.innerHTML = "";
@@ -769,8 +897,8 @@
       ["Your accuracy", state.you.shots ? Math.round((state.you.hits / state.you.shots) * 100) + "%" : "0%"],
       [state.aiName + "'s shots", state.ai.shots],
       [state.aiName + "'s accuracy", state.ai.shots ? Math.round((state.ai.hits / state.ai.shots) * 100) + "%" : "0%"],
-      ["Yachts you sank", state.you.sunk],
-      ["Yachts you lost", state.ai.sunk]
+      ["Vessels you sank", state.you.sunk],
+      ["Vessels you lost", state.ai.sunk]
     ].forEach(function (pair) {
       var wrap = document.createElement("div");
       var dt = document.createElement("dt"); dt.textContent = pair[0];
@@ -779,9 +907,19 @@
       stats.appendChild(wrap);
     });
 
-    $("turn-banner").textContent = youWon ? "You win!" : (winner === "ai" ? state.aiName + " wins" : "Stalemate");
+    $("turn-banner").textContent = youWon
+      ? "Victory is yours"
+      : (winner === "ai" ? state.aiName + " prevails" : "A still sea");
+    updateChipRecord();
     $("overlay").hidden = false;
-    log(youWon ? "🏆 You win the regatta!" : (winner === "ai" ? "☠️ " + state.aiName + " wins." : "Stalemate."), "big");
+    log(youWon
+      ? "Victory! The fleet of " + state.aiName + " is no more."
+      : (winner === "ai" ? "Defeat. " + state.aiName + " rules these waters." : "The battle ends in a stalemate."), "big");
+  }
+
+  function updateChipRecord() {
+    var rec = getRecord(state.playerName);
+    $("chip-player-record").textContent = rec ? recordSummary(rec) : "";
   }
 
   // ---------------------------------------------------------------- screens
@@ -792,14 +930,15 @@
     window.scrollTo(0, 0);
   }
 
-  function startSetup() {
+  function goToPlacement(name, playerAvatar, aiAvatar) {
     state = freshState();
-    var name = $("player-name").value.trim();
     state.playerName = name;
-    state.playerAvatar = chosen.player;
-    state.aiAvatar = chosen.ai;
-    var avatarMeta = DEFAULT_AVATARS.filter(function (a) { return a.src === chosen.ai; })[0];
-    state.aiName = avatarMeta ? avatarMeta.name : "Rival Skipper";
+    state.playerAvatar = playerAvatar;
+    state.aiAvatar = aiAvatar;
+    var pMeta = avatarMeta(playerAvatar);
+    var aMeta = avatarMeta(aiAvatar);
+    state.playerAvatarName = pMeta ? pMeta.name : name;
+    state.aiName = aMeta ? aMeta.name : "The Rival";
 
     randomizeBoard(state.playerBoard);
     randomizeBoard(state.aiBoard);
@@ -815,10 +954,13 @@
     $("chip-ai-img").src = state.aiAvatar;
     $("chip-player-name").textContent = state.playerName;
     $("chip-ai-name").textContent = state.aiName;
+    updateChipRecord();
     $("log").innerHTML = "";
     $("overlay").hidden = true;
     state.turn = "player";
-    log("The regatta begins — " + state.playerName + " fires first.", "big");
+    var rec = getRecord(state.playerName);
+    log("The fleets meet at dawn — " + state.playerName + " strikes first.", "big");
+    if (rec && (rec.wins || rec.losses)) log("Herald's record for " + state.playerName + ": " + recordSummary(rec) + ".", "you");
     showScreen("screen-game");
     refreshGame();
   }
@@ -845,11 +987,13 @@
         return;
       }
       $("name-error").hidden = true;
-      startSetup();
+      goToPlacement(name, chosen.player, chosen.ai);
     });
 
     $("player-name").addEventListener("input", function () {
-      if ($("player-name").value.trim()) $("name-error").hidden = true;
+      var value = $("player-name").value.trim();
+      if (value) $("name-error").hidden = true;
+      showWelcomeBack(value);
     });
     $("player-name").addEventListener("keydown", function (e) {
       if (e.key === "Enter") $("btn-start").click();
@@ -863,28 +1007,24 @@
     $("btn-confirm-placement").addEventListener("click", startGame);
 
     $("board-enemy").addEventListener("click", onEnemyBoardClick);
+    $("board-enemy").addEventListener("mousemove", onEnemyBoardHover);
+    $("board-enemy").addEventListener("mouseleave", clearBlastPreview);
 
     $("weapon-shot").addEventListener("click", function () {
       state.weapon = "shot";
+      clearBlastPreview();
       updateWeaponUI();
     });
     $("weapon-bomb").addEventListener("click", function () {
-      if (state.playerBombs <= 0) return;
+      if (state.playerCatapults <= 0) return;
       state.weapon = "bomb";
       updateWeaponUI();
     });
 
     $("btn-rematch").addEventListener("click", function () {
-      var name = state.playerName, pa = state.playerAvatar, aa = state.aiAvatar, an = state.aiName;
-      state = freshState();
-      state.playerName = name; state.playerAvatar = pa; state.aiAvatar = aa; state.aiName = an;
-      randomizeBoard(state.playerBoard);
-      randomizeBoard(state.aiBoard);
+      var name = state.playerName, pa = state.playerAvatar, aa = state.aiAvatar;
       $("overlay").hidden = true;
-      $("placement-avatar").src = pa;
-      $("placement-name").textContent = name + "'s waters";
-      renderPlacement();
-      showScreen("screen-placement");
+      goToPlacement(name, pa, aa);
     });
   }
 

@@ -3,33 +3,124 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Yacht Battle — Regatta Warfare</title>
+<title>Odyssey — Battle of the Aegean</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
+<!-- ============ AMBIENT DECOR (purely decorative, never interactive) ============ -->
+<div class="decor" aria-hidden="true">
+  <div class="decor-sky"></div>
+
+  <svg class="decor-column left" viewBox="0 0 120 900" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="marble" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#e8e2d2" stop-opacity="0.20"/>
+        <stop offset="45%" stop-color="#fbf7ec" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="#b9b09a" stop-opacity="0.18"/>
+      </linearGradient>
+    </defs>
+    <rect x="14" y="70" width="92" height="790" fill="url(#marble)"/>
+    <g fill="#cfc7b2" opacity="0.16">
+      <rect x="26" y="70" width="6" height="790"/><rect x="44" y="70" width="6" height="790"/>
+      <rect x="62" y="70" width="6" height="790"/><rect x="80" y="70" width="6" height="790"/>
+    </g>
+    <rect x="2" y="34" width="116" height="38" rx="6" fill="url(#marble)"/>
+    <rect x="10" y="8" width="100" height="28" rx="6" fill="url(#marble)"/>
+    <rect x="0" y="858" width="120" height="42" rx="6" fill="url(#marble)"/>
+  </svg>
+
+  <svg class="decor-column right" viewBox="0 0 120 900" preserveAspectRatio="none">
+    <rect x="14" y="70" width="92" height="790" fill="url(#marble)"/>
+    <g fill="#cfc7b2" opacity="0.16">
+      <rect x="26" y="70" width="6" height="790"/><rect x="44" y="70" width="6" height="790"/>
+      <rect x="62" y="70" width="6" height="790"/><rect x="80" y="70" width="6" height="790"/>
+    </g>
+    <rect x="2" y="34" width="116" height="38" rx="6" fill="url(#marble)"/>
+    <rect x="10" y="8" width="100" height="28" rx="6" fill="url(#marble)"/>
+    <rect x="0" y="858" width="120" height="42" rx="6" fill="url(#marble)"/>
+  </svg>
+
+  <svg class="decor-vine tl" viewBox="0 0 260 320">
+    <g class="sway" fill="none" stroke="#5f8f52" stroke-width="4" stroke-linecap="round" opacity="0.55">
+      <path d="M6 0 C 40 60, 10 120, 52 176 C 84 218, 62 268, 96 316"/>
+      <path d="M52 176 C 20 186, 8 208, 12 232"/>
+      <path d="M52 176 C 92 176, 108 152, 106 128"/>
+      <path d="M96 316 C 130 300, 150 314, 158 330"/>
+    </g>
+    <g class="sway leaves" fill="#79b366" opacity="0.6">
+      <ellipse cx="14" cy="236" rx="17" ry="10" transform="rotate(-24 14 236)"/>
+      <ellipse cx="106" cy="124" rx="17" ry="10" transform="rotate(26 106 124)"/>
+      <ellipse cx="36" cy="70" rx="15" ry="9" transform="rotate(-40 36 70)"/>
+      <ellipse cx="74" cy="228" rx="15" ry="9" transform="rotate(18 74 228)"/>
+      <ellipse cx="150" cy="326" rx="16" ry="9" transform="rotate(12 150 326)"/>
+    </g>
+  </svg>
+
+  <svg class="decor-vine tr" viewBox="0 0 260 320">
+    <g class="sway delay" fill="none" stroke="#5f8f52" stroke-width="4" stroke-linecap="round" opacity="0.55">
+      <path d="M254 0 C 220 60, 250 120, 208 176 C 176 218, 198 268, 164 316"/>
+      <path d="M208 176 C 240 186, 252 208, 248 232"/>
+      <path d="M208 176 C 168 176, 152 152, 154 128"/>
+      <path d="M164 316 C 130 300, 110 314, 102 330"/>
+    </g>
+    <g class="sway delay leaves" fill="#79b366" opacity="0.6">
+      <ellipse cx="246" cy="236" rx="17" ry="10" transform="rotate(24 246 236)"/>
+      <ellipse cx="154" cy="124" rx="17" ry="10" transform="rotate(-26 154 124)"/>
+      <ellipse cx="224" cy="70" rx="15" ry="9" transform="rotate(40 224 70)"/>
+      <ellipse cx="186" cy="228" rx="15" ry="9" transform="rotate(-18 186 228)"/>
+      <ellipse cx="110" cy="326" rx="16" ry="9" transform="rotate(-12 110 326)"/>
+    </g>
+  </svg>
+
+  <svg class="decor-trident" viewBox="0 0 160 460">
+    <g stroke="#e8c96a" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.30">
+      <path d="M80 456 L80 150"/>
+      <path d="M22 150 L22 44"/>
+      <path d="M138 150 L138 44"/>
+      <path d="M80 150 L80 24"/>
+      <path d="M22 150 q58 62 116 0"/>
+    </g>
+    <g fill="#e8c96a" opacity="0.30">
+      <path d="M80 4 l14 30 h-28z"/><path d="M22 24 l12 26 h-24z"/><path d="M138 24 l12 26 h-24z"/>
+      <circle cx="80" cy="196" r="12"/>
+    </g>
+  </svg>
+
+  <div class="decor-waves"></div>
+  <div class="decor-meander top"></div>
+  <div class="decor-meander bottom"></div>
+</div>
+
 <div class="app">
 
   <!-- ============ SETUP SCREEN ============ -->
   <section id="screen-setup" class="screen active">
     <header class="hero">
-      <h1>Yacht Battle</h1>
-      <p class="tagline">Hunt down the enemy fleet of yachts before they sink yours.</p>
+      <p class="eyebrow">A Battleship voyage of the Aegean</p>
+      <h1>Odyssey</h1>
+      <p class="tagline">Sink the enemy fleet of Greek vessels before the gods turn the tide against you.</p>
     </header>
 
     <div class="panel setup-panel">
       <div class="field">
         <label for="player-name">Your name</label>
-        <input id="player-name" type="text" maxlength="18" placeholder="e.g. Skipper Sam" autocomplete="off" />
-        <p class="error" id="name-error" hidden>Please enter your name to set sail.</p>
+        <input id="player-name" type="text" maxlength="18" placeholder="e.g. Telemachus" autocomplete="off" />
+        <p class="error" id="name-error" hidden>Enter your name before you set sail.</p>
+        <div id="welcome-back" class="welcome" hidden></div>
       </div>
 
       <div class="chooser-grid">
         <div class="chooser">
-          <h2>Your character</h2>
+          <h2>Your hero</h2>
           <div class="avatar-preview">
-            <img id="preview-player" alt="Your chosen character" />
+            <img id="preview-player" alt="Your chosen hero" />
           </div>
-          <div class="avatar-options" id="options-player" role="radiogroup" aria-label="Choose your character"></div>
+          <div class="avatar-name" id="name-player"></div>
+          <div class="avatar-options" id="options-player" role="radiogroup" aria-label="Choose your hero"></div>
           <label class="upload-btn">
             Upload your own image
             <input type="file" id="upload-player" accept="image/*" hidden />
@@ -38,11 +129,12 @@
         </div>
 
         <div class="chooser">
-          <h2>Opponent character</h2>
+          <h2>Your rival</h2>
           <div class="avatar-preview">
-            <img id="preview-ai" alt="Opponent character" />
+            <img id="preview-ai" alt="Rival hero" />
           </div>
-          <div class="avatar-options" id="options-ai" role="radiogroup" aria-label="Choose the opponent character"></div>
+          <div class="avatar-name" id="name-ai"></div>
+          <div class="avatar-options" id="options-ai" role="radiogroup" aria-label="Choose the rival hero"></div>
           <label class="upload-btn">
             Upload your own image
             <input type="file" id="upload-ai" accept="image/*" hidden />
@@ -52,23 +144,25 @@
       </div>
 
       <div class="rules">
-        <h3>Fleet &amp; weapons</h3>
+        <h3>How to play</h3>
         <ul>
-          <li>Each admiral commands 5 yachts: Mega Yacht (5), Super Yacht (4), Cruiser Yacht (3), Sport Yacht (3), Dinghy (2).</li>
-          <li>Every turn: one normal shot <em>or</em> one bomb — never both.</li>
-          <li>You each get <strong>2 bombs</strong>. A bomb strikes a plus-shaped 5-cell area.</li>
+          <li>Both fleets have 5 vessels on a 10 × 10 sea: Argo (5 cells), War Trireme (4), Bireme (3), Merchant Galley (3), Fishing Skiff (2).</li>
+          <li>Take turns firing at the enemy sea. Each turn you fire <strong>either one arrow or one catapult</strong> — never both.</li>
+          <li>An arrow strikes a single cell. A catapult strikes 5 cells in a plus shape: the target cell and the four cells directly above, below, left and right of it.</li>
+          <li>You and your rival each get <strong>2 catapult volleys</strong> for the whole battle, so spend them wisely.</li>
+          <li>Sink all 5 enemy vessels to win.</li>
         </ul>
       </div>
 
-      <button id="btn-start" class="primary">Start the regatta</button>
+      <button id="btn-start" class="primary">Begin the odyssey</button>
     </div>
   </section>
 
   <!-- ============ PLACEMENT SCREEN ============ -->
   <section id="screen-placement" class="screen">
     <header class="hero small">
-      <h1>Moor your yachts</h1>
-      <p class="tagline">Drag a yacht to move it, click it to rotate — or let the harbour master arrange them.</p>
+      <h1>Muster your fleet</h1>
+      <p class="tagline">Drag a vessel to move it, click it to turn it, or let the harbour master arrange the fleet for you.</p>
     </header>
 
     <div class="placement-wrap">
@@ -83,9 +177,9 @@
       <div class="panel placement-side">
         <h3>Your fleet</h3>
         <ul class="fleet-list" id="placement-fleet"></ul>
-        <button id="btn-randomize" class="secondary">Randomize placement</button>
+        <button id="btn-randomize" class="secondary">Let the harbour master arrange it</button>
         <button id="btn-confirm-placement" class="primary">Set sail</button>
-        <p class="hint">Yachts may not overlap or leave the 10 × 10 grid.</p>
+        <p class="hint">Vessels may not overlap or sail off the 10 × 10 sea.</p>
       </div>
     </div>
   </section>
@@ -97,14 +191,15 @@
         <img class="chip-avatar" id="chip-player-img" alt="" />
         <div>
           <div class="chip-name" id="chip-player-name">You</div>
-          <div class="chip-sub">Yachts afloat: <span id="chip-player-ships">5</span></div>
+          <div class="chip-sub">Vessels afloat: <span id="chip-player-ships">5</span></div>
+          <div class="chip-sub" id="chip-player-record"></div>
         </div>
       </div>
       <div class="turn-banner" id="turn-banner">Your turn</div>
       <div class="player-chip right">
         <div>
           <div class="chip-name" id="chip-ai-name">Rival</div>
-          <div class="chip-sub">Yachts afloat: <span id="chip-ai-ships">5</span></div>
+          <div class="chip-sub">Vessels afloat: <span id="chip-ai-ships">5</span></div>
         </div>
         <img class="chip-avatar" id="chip-ai-img" alt="" />
       </div>
@@ -112,14 +207,23 @@
 
     <div class="game-grid">
       <div class="board-card">
-        <h2 class="board-title">Enemy waters</h2>
-        <div class="board" id="board-enemy" aria-label="Enemy waters — click to fire"></div>
+        <h2 class="board-title">Enemy sea</h2>
+        <div class="board" id="board-enemy" aria-label="Enemy sea — click a cell to attack"></div>
         <div class="weapon-bar">
           <button class="weapon active" id="weapon-shot" data-weapon="shot">
-            <span class="weapon-icon">🎯</span> Normal shot
+            <span class="weapon-icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><g stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round">
+                <path d="M4 28 L24 8"/><path d="M17 6 h9 v9"/><path d="M4 28 l1 -6 6 -1"/></g></svg>
+            </span>
+            Arrow <span class="weapon-sub">one cell</span>
           </button>
           <button class="weapon" id="weapon-bomb" data-weapon="bomb">
-            <span class="weapon-icon">💣</span> Bomb <span class="badge" id="player-bombs">2</span>
+            <span class="weapon-icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><g stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round">
+                <path d="M4 26 h20"/><path d="M8 26 L20 8"/><path d="M14 26 L26 12"/><circle cx="25" cy="8" r="3.5"/></g></svg>
+            </span>
+            Catapult <span class="weapon-sub">5 cells, plus shape</span>
+            <span class="badge" id="player-bombs">2</span>
           </button>
         </div>
         <ul class="fleet-list compact" id="enemy-fleet"></ul>
@@ -127,32 +231,32 @@
 
       <div class="center-column">
         <div class="panel log-panel">
-          <h3>Battle log</h3>
+          <h3>Herald's chronicle</h3>
           <ul id="log" class="log"></ul>
         </div>
         <div class="panel stats-panel">
-          <h3>Opponent live stats</h3>
+          <h3>Rival's live stats</h3>
           <dl class="stats">
             <div><dt>Shots taken</dt><dd id="ai-shots">0</dd></div>
             <div><dt>Cells hit</dt><dd id="ai-hits">0</dd></div>
             <div><dt>Cells missed</dt><dd id="ai-misses">0</dd></div>
             <div><dt>Hit / miss ratio</dt><dd id="ai-ratio">—</dd></div>
             <div><dt>Accuracy</dt><dd id="ai-accuracy">0%</dd></div>
-            <div><dt>Yachts sunk</dt><dd id="ai-sunk">0</dd></div>
-            <div><dt>Bombs left</dt><dd id="ai-bombs">2</dd></div>
+            <div><dt>Vessels sunk</dt><dd id="ai-sunk">0</dd></div>
+            <div><dt>Catapults left</dt><dd id="ai-bombs">2</dd></div>
           </dl>
           <h3 class="mt">Your stats</h3>
           <dl class="stats">
             <div><dt>Shots taken</dt><dd id="you-shots">0</dd></div>
             <div><dt>Accuracy</dt><dd id="you-accuracy">0%</dd></div>
-            <div><dt>Yachts sunk</dt><dd id="you-sunk">0</dd></div>
+            <div><dt>Vessels sunk</dt><dd id="you-sunk">0</dd></div>
           </dl>
         </div>
       </div>
 
       <div class="board-card">
-        <h2 class="board-title">Your waters</h2>
-        <div class="board" id="board-own" aria-label="Your waters"></div>
+        <h2 class="board-title">Your sea</h2>
+        <div class="board" id="board-own" aria-label="Your sea"></div>
         <ul class="fleet-list compact" id="own-fleet"></ul>
       </div>
     </div>
@@ -162,10 +266,11 @@
   <div id="overlay" class="overlay" hidden>
     <div class="overlay-card">
       <img id="overlay-avatar" alt="" class="overlay-avatar" />
-      <h2 id="overlay-title">Victory!</h2>
+      <h2 id="overlay-title">Victory</h2>
       <p id="overlay-text"></p>
+      <p id="overlay-streak" class="streak-line"></p>
       <dl class="stats final" id="overlay-stats"></dl>
-      <button id="btn-rematch" class="primary">Play again</button>
+      <button id="btn-rematch" class="primary">Sail again</button>
     </div>
   </div>
 
