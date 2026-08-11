@@ -746,9 +746,6 @@ button { font-family: inherit; }
   .chip-avatar { width: 46px; height: 46px; }
   .chip-name { font-size: 17px; }
   .turn-stack { flex: 1 1 100%; order: 3; }
-}
-
-@media (max-width: 620px) {
   .audio-bar { top: 8px; right: 8px; gap: 6px; }
   .audio-toggle { padding: 6px 9px; }
   .audio-label { display: none; }

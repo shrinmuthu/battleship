@@ -227,9 +227,12 @@ breakpoint that lets it wrap and shrinks `.chip-avatar` was `@media (max-width: 
 
 **Fix applied** (`styles.css`)
 
-The top-bar rules were split out of the 620 px block into their own `@media (max-width: 680px)` block so the
-bar wraps before the chips outgrow the panel. The audio-bar rules (including the icon-only
-`.audio-label { display: none }`) stay at 620 px, so wide-enough screens keep the text labels.
+The whole narrow-screen block, top bar and audio bar alike, moved from `@media (max-width: 620px)` to
+`@media (max-width: 680px)`, so the bar wraps before the chips outgrow the panel.
+
+Splitting the two apart (top bar at 680 px, audio bar left at 620 px) was tried first and rejected: with the
+bar wrapped, the chips move up under the fixed audio bar, so the still-labelled "Sound" pill landed on the
+top-right corner of the rival's name throughout the 621–680 px band. Both breakpoints have to move together.
 
 ---
 
