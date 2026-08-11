@@ -534,6 +534,8 @@
     handle.type = "button";
     handle.className = "turn-handle";
     handle.dataset.ship = String(ship.id);
+    handle.dataset.r = String(ship.cells[0].r);
+    handle.dataset.c = String(ship.cells[0].c);
     handle.style.left = (bowCell.offsetLeft + bowCell.offsetWidth / 2) + "px";
     handle.style.top = (bowCell.offsetTop + bowCell.offsetHeight / 2) + "px";
     handle.title = "Turn the " + ship.name;
@@ -541,9 +543,8 @@
       " (currently " + (ship.horizontal ? "across" : "down") + ")");
     handle.innerHTML = ROTATE_ICON +
       '<span class="handle-tag">' + escapeHtml(ship.name) + "</span>";
-    // The handle covers the bow cell, so it has to start drags as well as turns; it
-    // resolves the gesture itself rather than letting the board's endDrag see it.
-    var byMouse = false;
+    // The handle covers the bow cell, so it has to resolve that cell's gestures itself:
+    // its own mouseup stops propagation, and the board's endDrag never sees the release.
     handle.addEventListener("mousedown", function (e) {
       placement.drag = { ship: ship, offset: 0 };
       placement.moved = false;
@@ -552,17 +553,20 @@
     handle.addEventListener("mouseup", function (e) {
       e.stopPropagation();
       if (!placement.drag) return;
+      var dragged = placement.drag.ship;
       var moved = placement.moved;
-      byMouse = true;
       clearPreview();
+      if (moved) resolveDrop(Number(handle.dataset.r), Number(handle.dataset.c));
       placement.drag = null;
       placement.moved = false;
+      // rotateShip renders itself, and re-rendering would wipe its refusal flash
       if (moved) renderPlacement();
-      else rotateShip(ship);
+      else rotateShip(dragged);
     });
+    // detail is 0 only for keyboard activation; mouse gestures are already resolved above
     handle.addEventListener("click", function (e) {
       e.stopPropagation();
-      if (byMouse) { byMouse = false; return; }
+      if (e.detail) return;
       rotateShip(ship);
     });
     handle.addEventListener("mouseenter", function () { highlightShip(ship.id); });
@@ -716,6 +720,19 @@
     return false;
   }
 
+  /* Commit the in-flight drag as if it had been dropped on cell (r, c). Shared by the
+     board and by the bow handles, which sit on top of a cell and swallow its mouseup. */
+  function resolveDrop(r, c) {
+    var drag = placement.drag;
+    if (!drag) return;
+    var ship = drag.ship;
+    var row = ship.horizontal ? r : r - drag.offset;
+    var col = ship.horizontal ? c - drag.offset : c;
+    if (canPlace(state.playerBoard, ship, row, col, ship.horizontal)) {
+      place(state.playerBoard, ship, row, col, ship.horizontal);
+    }
+  }
+
   var noteTimer = null;
 
   function placementNote(text) {
@@ -796,11 +813,7 @@
       clearPreview();
       if (hit) {
         if (placement.moved) {
-          var row = ship.horizontal ? hit.r : hit.r - placement.drag.offset;
-          var col = ship.horizontal ? hit.c - placement.drag.offset : hit.c;
-          if (canPlace(state.playerBoard, ship, row, col, ship.horizontal)) {
-            place(state.playerBoard, ship, row, col, ship.horizontal);
-          }
+          resolveDrop(hit.r, hit.c);
         } else {
           rotateShip(ship);
           turned = true;
