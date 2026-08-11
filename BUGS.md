@@ -1,12 +1,13 @@
 # Odyssey — Battle of the Aegean: bug report
 
-Revision tested: `03d45e1` (turn buttons) on `main`, served with `python3 -m http.server 8000`;
-bugs 1 and 2 were fixed in `a2fa3a0` and re-verified there. Line numbers below refer to the
-pre-patch revision.
-Full E2E + edge-case + audio pass. `node --check game.js` and `node --check audio.js` both pass.
-Two defects were found in that pass; everything else planned passed (see "Verified" at the bottom).
-Both are now fixed, along with three defects caught earlier while building the difficulty, audio and
-navigation features.
+Revisions tested: the first full pass ran on `03d45e1` (turn buttons); bugs 1 and 2 were fixed in
+`a2fa3a0` and re-verified there. A second full regression pass then ran on `a528946` for deployment
+readiness and found one further (cosmetic) defect, bug 6, fixed afterwards. Served throughout with
+`python3 -m http.server 8000`. Line numbers below refer to the revision each bug was found on.
+Full E2E + edge-case + audio passes, plus a GitHub Pages subpath check. `node --check game.js` and
+`node --check audio.js` both pass. Six defects total: two from the first full pass, one cosmetic one from
+the second, and three caught earlier while building the difficulty, audio and navigation features. All are
+fixed; everything else planned passed (see "Verified" at the bottom).
 
 | # | Bug | Status |
 | --- | --- | --- |
@@ -15,6 +16,7 @@ navigation features.
 | 3 | A pending AI turn could fire into a freshly started game | Fixed |
 | 4 | The previous battle's enemy board could paint on the way into a new one | Fixed |
 | 5 | Background music threw `AudioParam` errors and dropped notes | Fixed |
+| 6 | Rival chip spilled past the top-bar panel between 621 px and 660 px | Fixed |
 
 ---
 
@@ -192,6 +194,42 @@ provided float value is non-finite.` repeatedly, and the affected notes were sil
 **Fix:** `SCALE` extended to cover every degree the phrase uses (`[0, 2, 4, 5, 7, 9, 10, 12, 14, 16]`).
 Verified afterwards with an `AnalyserNode` tap on the audio graph: non-zero peak output and zero console
 errors.
+
+---
+
+## Bug 6 — Rival chip spills past the top-bar panel in the 621–660 px band
+
+**Severity:** low (cosmetic only — nothing is clipped by the viewport or unclickable)
+
+**What happens**
+
+Just above the `max-width: 620px` breakpoint added for bug 2, the battle top bar is still a single
+non-wrapping row, but the panel behind it has already narrowed. At a 640 px viewport the `.topbar` panel's
+right edge sits at 569 px while `.player-chip.right` reaches 594 px, so the rival's avatar and
+"Medium — Helmsman" label stick roughly 25 px out past the rounded panel background.
+
+This is not a recurrence of bug 2: `document.documentElement.scrollWidth === clientWidth` at every width
+from 1400 px down to 420 px, so the page never scrolls sideways and nothing is cut off by the viewport.
+
+**Steps to reproduce**
+
+1. Start a battle and set the viewport to 640 × 800.
+2. Observe the rival chip overhanging the top-bar panel on the right.
+
+Measured (topbar right edge vs chip right edge): 700 and 680 clean; 660 → 569/594; 645 → 574/594;
+640 → 569/594; 630 → 559/594; 621 → 550/594; 620 and below clean once the media query engages.
+
+**Root cause**
+
+`.topbar` is a non-wrapping flex row whose chips have a minimum content width of about 594 px, and the only
+breakpoint that lets it wrap and shrinks `.chip-avatar` was `@media (max-width: 620px)`, leaving the
+621–660 px band unhandled.
+
+**Fix applied** (`styles.css`)
+
+The top-bar rules were split out of the 620 px block into their own `@media (max-width: 680px)` block so the
+bar wraps before the chips outgrow the panel. The audio-bar rules (including the icon-only
+`.audio-label { display: none }`) stay at 620 px, so wide-enough screens keep the text labels.
 
 ---
 

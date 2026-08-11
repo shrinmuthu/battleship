@@ -739,13 +739,16 @@ button { font-family: inherit; }
   gap: clamp(16px, 2vw, 40px);
   align-items: start;
 }
-@media (max-width: 620px) {
+@media (max-width: 680px) {
   .topbar { flex-wrap: wrap; justify-content: center; gap: 12px; padding: 12px 14px; }
   .player-chip { flex: 1 1 45%; min-width: 0; gap: 10px; }
   .player-chip.right { justify-content: flex-end; }
   .chip-avatar { width: 46px; height: 46px; }
   .chip-name { font-size: 17px; }
   .turn-stack { flex: 1 1 100%; order: 3; }
+}
+
+@media (max-width: 620px) {
   .audio-bar { top: 8px; right: 8px; gap: 6px; }
   .audio-toggle { padding: 6px 9px; }
   .audio-label { display: none; }
