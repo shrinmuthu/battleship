@@ -87,6 +87,10 @@ h1, h2, h3, .turn-banner, .primary, .secondary, .chip-name, .board-title, .overl
 .sway.delay { animation-delay: -4.5s; animation-duration: 11s; }
 .leaves { animation-duration: 7s; }
 
+/* the trident frames the home screen only — it would sit over the boards elsewhere */
+body[data-screen="placement"] .decor-trident,
+body[data-screen="game"] .decor-trident { display: none; }
+
 .decor-trident {
   position: absolute;
   right: clamp(14px, 3vw, 60px);

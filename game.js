@@ -1176,6 +1176,7 @@
     ["screen-setup", "screen-placement", "screen-game"].forEach(function (s) {
       $(s).classList.toggle("active", s === id);
     });
+    document.body.dataset.screen = id.replace("screen-", "");
     window.scrollTo(0, 0);
   }
 
@@ -1247,6 +1248,7 @@
   function init() {
     state = freshState();
 
+    document.body.dataset.screen = "setup";
     initAudioControls();
     buildDifficultyOptions();
     renderScoreboard();
