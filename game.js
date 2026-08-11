@@ -655,7 +655,17 @@
     }
 
     flashPlacement(ship);
+    placementNote("The " + ship.name + " has no room to turn — move it first.");
     return false;
+  }
+
+  var noteTimer = null;
+
+  function placementNote(text) {
+    var el = $("placement-note");
+    el.textContent = text;
+    if (noteTimer) clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () { el.textContent = ""; }, 3500);
   }
 
   function flashPlacement(ship) {
@@ -725,6 +735,7 @@
       if (!placement.drag) return;
       var ship = placement.drag.ship;
       var hit = placementCellFromEvent(e);
+      var turned = false;
       clearPreview();
       if (hit) {
         if (placement.moved) {
@@ -735,11 +746,13 @@
           }
         } else {
           rotateShip(ship);
+          turned = true;
         }
       }
       placement.drag = null;
       placement.moved = false;
-      renderPlacement();
+      // rotateShip renders itself; re-rendering here would wipe the refusal flash
+      if (!turned) renderPlacement();
     }
 
     boardEl.addEventListener("mouseup", endDrag);

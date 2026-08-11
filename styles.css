@@ -611,6 +611,7 @@ button { font-family: inherit; }
 }
 .rotate-btn:hover { color: var(--gold); border-color: var(--gold); background: rgba(232, 201, 106, 0.12); }
 .rotate-icon { width: 15px; height: 15px; display: block; }
+.placement-note { min-height: 18px; margin: 10px 0 0; color: #ffb9a6; font-size: 13.5px; }
 
 /* ---------------------------------------------------------- game screen */
 .topbar {
@@ -738,6 +739,18 @@ button { font-family: inherit; }
   gap: clamp(16px, 2vw, 40px);
   align-items: start;
 }
+@media (max-width: 620px) {
+  .topbar { flex-wrap: wrap; justify-content: center; gap: 12px; padding: 12px 14px; }
+  .player-chip { flex: 1 1 45%; min-width: 0; gap: 10px; }
+  .player-chip.right { justify-content: flex-end; }
+  .chip-avatar { width: 46px; height: 46px; }
+  .chip-name { font-size: 17px; }
+  .turn-stack { flex: 1 1 100%; order: 3; }
+  .audio-bar { top: 8px; right: 8px; gap: 6px; }
+  .audio-toggle { padding: 6px 9px; }
+  .audio-label { display: none; }
+}
+
 @media (max-width: 1250px) {
   .game-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .center-column { max-width: 640px; }
