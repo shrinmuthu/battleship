@@ -43,6 +43,11 @@ Records are stored in `localStorage` under `odyssey.captains.v1`, keyed by the l
 holding wins, losses, current streak (positive = wins, negative = losses) and best win streak.
 They persist only in the browser they were created in; there is no account or password.
 
+The home screen shows a **Hall of captains** scoreboard of every stored captain (wins, losses,
+current streak, best streak), with a link to erase all records. A **Return to harbour** button on
+the placement screen, the battle screen and the end-of-battle card goes back to the home screen;
+leaving mid-battle asks for confirmation and records nothing.
+
 ## AI and difficulty
 
 | Difficulty | Behaviour |

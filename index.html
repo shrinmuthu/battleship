@@ -161,6 +161,20 @@
       </div>
 
       <button id="btn-start" class="primary">Begin the odyssey</button>
+
+      <div class="scoreboard" id="scoreboard" hidden>
+        <div class="scoreboard-head">
+          <h3>Hall of captains</h3>
+          <button type="button" id="btn-clear-scores" class="link-btn">Clear all records</button>
+        </div>
+        <table class="score-table">
+          <thead>
+            <tr><th>Captain</th><th>Wins</th><th>Losses</th><th>Streak</th><th>Best</th></tr>
+          </thead>
+          <tbody id="scoreboard-body"></tbody>
+        </table>
+        <p class="hint">Records are saved in this browser only.</p>
+      </div>
     </div>
   </section>
 
@@ -170,6 +184,10 @@
       <h1>Muster your fleet</h1>
       <p class="tagline">Drag a vessel to move it, click it to turn it, or let the harbour master arrange the fleet for you.</p>
     </header>
+
+    <div class="screen-actions">
+      <button type="button" class="ghost" data-home>← Return to harbour</button>
+    </div>
 
     <div class="placement-wrap">
       <div class="board-card">
@@ -201,7 +219,10 @@
           <div class="chip-sub" id="chip-player-record"></div>
         </div>
       </div>
-      <div class="turn-banner" id="turn-banner">Your turn</div>
+      <div class="turn-stack">
+        <div class="turn-banner" id="turn-banner">Your turn</div>
+        <button type="button" class="ghost" data-home>← Return to harbour</button>
+      </div>
       <div class="player-chip right">
         <div>
           <div class="chip-name" id="chip-ai-name">Rival</div>
@@ -277,7 +298,10 @@
       <p id="overlay-text"></p>
       <p id="overlay-streak" class="streak-line"></p>
       <dl class="stats final" id="overlay-stats"></dl>
-      <button id="btn-rematch" class="primary">Sail again</button>
+      <div class="overlay-actions">
+        <button id="btn-rematch" class="primary">Sail again</button>
+        <button type="button" class="secondary" data-home>Return to harbour</button>
+      </div>
     </div>
   </div>
 

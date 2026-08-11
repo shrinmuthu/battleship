@@ -203,6 +203,44 @@
       "<span class='record'>" + escapeHtml(recordSummary(rec)) + ". " + escapeHtml(streakText(rec)) + "</span>";
   }
 
+  /* Every captain stored in this browser, best record first. */
+  function allRecords() {
+    var records = loadRecords();
+    return Object.keys(records).map(function (k) { return records[k]; })
+      .filter(function (rec) { return rec && (rec.wins || rec.losses); })
+      .sort(function (a, b) {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return (a.losses || 0) - (b.losses || 0);
+      });
+  }
+
+  function streakCell(rec) {
+    var s = rec.streak || 0;
+    if (s > 0) return { text: s + "W", cls: "win" };
+    if (s < 0) return { text: (-s) + "L", cls: "loss" };
+    return { text: "—", cls: "" };
+  }
+
+  function renderScoreboard() {
+    var box = $("scoreboard");
+    var body = $("scoreboard-body");
+    var rows = allRecords();
+    body.innerHTML = "";
+    if (!rows.length) { box.hidden = true; return; }
+    box.hidden = false;
+    rows.forEach(function (rec) {
+      var tr = document.createElement("tr");
+      var st = streakCell(rec);
+      tr.innerHTML =
+        "<td>" + escapeHtml(rec.name || "") + "</td>" +
+        "<td>" + (rec.wins || 0) + "</td>" +
+        "<td>" + (rec.losses || 0) + "</td>" +
+        '<td class="streak ' + st.cls + '">' + st.text + "</td>" +
+        "<td>" + (rec.bestStreak || 0) + "</td>";
+      body.appendChild(tr);
+    });
+  }
+
   // ---------------------------------------------------------------- model
   function makeFleet() {
     return FLEET.map(function (s) {
@@ -1064,6 +1102,7 @@
     } else {
       var rec = updateRecord(state.playerName, youWon);
       streakLine.textContent = rec ? (recordSummary(rec) + ". " + streakText(rec)) : "";
+      renderScoreboard();
     }
 
     var stats = $("overlay-stats");
@@ -1100,6 +1139,19 @@
   }
 
   // ---------------------------------------------------------------- screens
+  /* Abandon any battle in progress and return to the setup screen. */
+  function goHome() {
+    if (state && !state.over && $("screen-game").classList.contains("active")) {
+      var ok = window.confirm("Leave this battle? The current game will be lost and no record is kept.");
+      if (!ok) return;
+    }
+    if (state) { state.busy = true; state.over = true; }
+    $("overlay").hidden = true;
+    showScreen("screen-setup");
+    showWelcomeBack($("player-name").value.trim());
+    renderScoreboard();
+  }
+
   function showScreen(id) {
     ["screen-setup", "screen-placement", "screen-game"].forEach(function (s) {
       $(s).classList.toggle("active", s === id);
@@ -1149,6 +1201,7 @@
     state = freshState();
 
     buildDifficultyOptions();
+    renderScoreboard();
     buildAvatarOptions("player");
     buildAvatarOptions("ai");
     wireUpload("player");
@@ -1216,6 +1269,17 @@
       var name = state.playerName, pa = state.playerAvatar, aa = state.aiAvatar;
       $("overlay").hidden = true;
       goToPlacement(name, pa, aa);
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-home]"), function (btn) {
+      btn.addEventListener("click", goHome);
+    });
+
+    $("btn-clear-scores").addEventListener("click", function () {
+      if (!window.confirm("Erase every captain's record stored in this browser?")) return;
+      saveRecords({});
+      renderScoreboard();
+      showWelcomeBack($("player-name").value.trim());
     });
   }
 
