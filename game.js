@@ -94,6 +94,12 @@
     '<path d="M4 20 l-4 -5 6 1z" fill="#e8c96a"/>' +
     "</svg>";
 
+  var ROTATE_ICON =
+    '<svg class="rotate-icon" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>' +
+    "</g></svg>";
+
   // ---------------------------------------------------------------- helpers
   function $(id) { return document.getElementById(id); }
   function idx(r, c) { return r * SIZE + c; }
@@ -590,7 +596,7 @@
     });
   }
 
-  function renderFleetList(ul, board) {
+  function renderFleetList(ul, board, rotatable) {
     ul.innerHTML = "";
     board.ships.forEach(function (s) {
       var li = document.createElement("li");
@@ -598,7 +604,25 @@
       var pips = "";
       for (var i = 0; i < s.size; i++) pips += i < s.hits ? "●" : "○";
       li.innerHTML = "<span class='ship-label'>" + SHIP_ICON + escapeHtml(s.name) +
-        " <span class='muted'>(" + s.size + ")</span></span><span class='pips'>" + pips + "</span>";
+        " <span class='muted'>(" + s.size + ")</span></span>";
+
+      if (rotatable) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "rotate-btn";
+        btn.title = "Turn the " + s.name;
+        btn.setAttribute("aria-label", "Turn the " + s.name +
+          " (currently " + (s.horizontal ? "across" : "down") + ")");
+        btn.innerHTML = ROTATE_ICON + "<span>" + (s.horizontal ? "Across" : "Down") + "</span>";
+        btn.addEventListener("click", function () { rotateShip(s); });
+        li.appendChild(btn);
+      } else {
+        var pipsEl = document.createElement("span");
+        pipsEl.className = "pips";
+        pipsEl.textContent = pips;
+        li.appendChild(pipsEl);
+      }
+
       ul.appendChild(li);
     });
   }
@@ -608,7 +632,41 @@
 
   function renderPlacement() {
     renderBoard($("board-placement"), state.playerBoard, true);
-    renderFleetList($("placement-fleet"), state.playerBoard);
+    renderFleetList($("placement-fleet"), state.playerBoard, true);
+  }
+
+  /* Turn a vessel about its bow, sliding it back onto the sea if the turn would
+     run it aground. Returns false when no orientation fits. */
+  function rotateShip(ship) {
+    var board = state.playerBoard;
+    var horizontal = !ship.horizontal;
+    var maxRow = horizontal ? SIZE - 1 : SIZE - ship.size;
+    var maxCol = horizontal ? SIZE - ship.size : SIZE - 1;
+
+    for (var back = 0; back < ship.size; back++) {
+      var r = Math.min(ship.row, maxRow) - (horizontal ? 0 : back);
+      var c = Math.min(ship.col, maxCol) - (horizontal ? back : 0);
+      if (r < 0 || c < 0) break;
+      if (canPlace(board, ship, r, c, horizontal)) {
+        place(board, ship, r, c, horizontal);
+        renderPlacement();
+        return true;
+      }
+    }
+
+    flashPlacement(ship);
+    return false;
+  }
+
+  function flashPlacement(ship) {
+    ship.cells.forEach(function (p) {
+      var el = cellEl($("board-placement"), p.r, p.c);
+      if (!el) return;
+      el.classList.remove("invalid");
+      void el.offsetWidth;
+      el.classList.add("invalid");
+      setTimeout(function () { el.classList.remove("invalid"); }, 450);
+    });
   }
 
   function placementCellFromEvent(e) {
@@ -676,18 +734,7 @@
             place(state.playerBoard, ship, row, col, ship.horizontal);
           }
         } else {
-          // a plain click turns the vessel around its bow
-          var horizontal = !ship.horizontal;
-          var r = ship.row, c = ship.col;
-          if (canPlace(state.playerBoard, ship, r, c, horizontal)) {
-            place(state.playerBoard, ship, r, c, horizontal);
-          } else {
-            var nr = Math.min(r, SIZE - (horizontal ? 1 : ship.size));
-            var nc = Math.min(c, SIZE - (horizontal ? ship.size : 1));
-            if (canPlace(state.playerBoard, ship, nr, nc, horizontal)) {
-              place(state.playerBoard, ship, nr, nc, horizontal);
-            }
-          }
+          rotateShip(ship);
         }
       }
       placement.drag = null;
