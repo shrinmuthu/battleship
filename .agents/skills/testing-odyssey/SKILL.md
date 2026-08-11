@@ -82,3 +82,16 @@ localStorage keys: `odyssey.captains.v1` (records), `odyssey.sfx.v1`, `odyssey.m
   `#chip-player-record` line to the player chip and changes its height, which reads as a false regression.
 - To diff two revisions visually, `git archive <rev> | tar -x -C /tmp/old` and serve the copy on a second
   port, then measure both with the same script.
+- Never test the fixed `.audio-bar` for collisions against the `.topbar` bounding box — it overlaps that box
+  by design at every width. Hit-test `document.elementFromPoint` at the corners of the specific content
+  (`.chip-name`, `.chip-avatar`, `.turn-stack`) instead.
+- When a fix moves a breakpoint, sweep one pixel either side of it (e.g. 681 vs 680) to prove the flip lands
+  where intended. Note that the topbar wrap and the icon-only audio labels must flip at the same width: if
+  the bar wraps while the pills are still labelled, the pills land on the rival's name.
+- To test GitHub-Pages-style subpath hosting, `git archive HEAD | tar -x -C /tmp/pages/battleship` and serve
+  `/tmp/pages` on a second port, then load `/battleship/index.html`. When comparing CSS across those two
+  origins, select the same-origin `styles.css` sheet explicitly — the cross-origin sheet's rule list is
+  inaccessible and looks like a parse failure.
+- To stage a boxed-in vessel for the turn-refusal test, predict `rotateShip`'s clamp-then-slide result from
+  DOM geometry and re-randomize until a vessel has no legal target, then perform the refusal click as a real
+  user gesture.
