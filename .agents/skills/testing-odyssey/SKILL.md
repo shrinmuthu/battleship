@@ -95,3 +95,11 @@ localStorage keys: `odyssey.captains.v1` (records), `odyssey.sfx.v1`, `odyssey.m
 - To stage a boxed-in vessel for the turn-refusal test, predict `rotateShip`'s clamp-then-slide result from
   DOM geometry and re-randomize until a vessel has no legal target, then perform the refusal click as a real
   user gesture.
+- To catch a short-lived CSS flash (e.g. `.cell.invalid`, ~450 ms) reliably, arm a `setInterval` sampler from
+  a one-shot capture-phase `mousedown` listener *before* the gesture. A sampler started from the shell races
+  the click and usually expires first.
+- To stage a boxed-in vessel deterministically, click "Let the harbour master arrange it" in a loop and
+  evaluate the clamp-then-slide prediction after each arrangement; one usually appears within a few tries.
+- The game exposes no state on `window` (only `OdysseyAudio`), so forcing a game end means clicking cells and
+  waiting for `#board-enemy.interactive` between shots. Sweeping the grid reaches an overlay in ~60 shots
+  (usually a loss, which still reaches the "Sail again" rematch path).
