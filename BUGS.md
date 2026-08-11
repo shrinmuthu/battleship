@@ -1,6 +1,8 @@
 # Odyssey — Battle of the Aegean: bug report
 
-Revision tested: `03d45e1` (turn buttons) on `main`, served with `python3 -m http.server 8000`.
+Revision tested: `03d45e1` (turn buttons) on `main`, served with `python3 -m http.server 8000`;
+bugs 1 and 2 were fixed in `a2fa3a0` and re-verified there. Line numbers below refer to the
+pre-patch revision.
 Full E2E + edge-case + audio pass. `node --check game.js` and `node --check audio.js` both pass.
 Two defects were found in that pass; everything else planned passed (see "Verified" at the bottom).
 Both are now fixed, along with three defects caught earlier while building the difficulty, audio and
@@ -109,8 +111,8 @@ right edge. The placement and home screens are fine at the same width; only the 
 3. Observe the rival chip clipped at the right edge; `document.documentElement.scrollWidth` = 594 vs
    `clientWidth` = 485, and `window.scrollTo(500, 0)` leaves `window.scrollX === 109`.
 
-Overflow by width (px of horizontal scroll): 700 → 0, 640 → 0, 600 → 9, 560 → 49, 520 → 89, 500 → 109,
-420 → 189. So the breakpoint is ~600 px. 900 px is clean.
+Overflow by width (px of horizontal scroll): 640 → 0, 600 → 9, 560 → 49, 500 → 109, 420 → 189.
+So the breakpoint is ~600 px. 900 px is clean.
 
 **Root cause**
 
@@ -145,6 +147,9 @@ breakpoint so they no longer sit on top of the battle chrome on a narrow screen.
 
 **Severity:** high (would have let the rival shoot on the player's first turn of a new battle)
 
+**Provenance:** found by reading the source, not reproduced at runtime before the fix; only the fixed
+behaviour was verified.
+
 **What happens:** `endPlayerTurn` schedules the reply with `setTimeout(aiTurn, 850)`. Leaving the battle
 ("Return to harbour") or starting a rematch within that window left the timer pending; `aiTurn` only
 checked the current global `state.over`, and the new state is not over, so the queued turn would run
@@ -175,6 +180,9 @@ caught a visible frame, so this is a latent-state fix rather than a reproduced v
 
 **Severity:** medium (console errors on every loop of the lyre theme)
 
+**Provenance:** found and fixed while building the audio feature, before it was committed, so it is not
+reproducible from the repository history.
+
 **What happens:** enabling the music logged `Failed to set the 'value' property on 'AudioParam': The
 provided float value is non-finite.` repeatedly, and the affected notes were silent.
 
@@ -187,14 +195,12 @@ errors.
 
 ---
 
-## Minor observations (not filed as bugs)
+## Minor observations (both addressed in `a2fa3a0`)
 
-- The fixed `.audio-bar` (`styles.css:653-660`, z-index 60) sits over the `.topbar` on the battle screen and,
-  at 500 px, over the turn banner as well; it also stays clickable above the end overlay (z-index 50). All of
-  this looks intentional ("toggles on every screen"), and nothing is made unusable at ≥900 px, but at very
-  narrow widths the "Sound"/"Lyre" pills do sit on top of battle chrome.
-- The refusal message when a vessel cannot turn is visual only (a 450 ms red flash) — there is no line in the
-  Herald's chronicle or an aria-live announcement, so screen-reader users get no feedback either way.
+- The fixed `.audio-bar` (z-index 60) sat over the `.topbar` on the battle screen and, at 500 px, over the
+  turn banner as well. The toggles are now icon-only below 620 px and no longer overlap battle chrome.
+- The refusal message when a vessel could not turn was visual only (a 450 ms red flash). A `role="status"`
+  live region now announces it as well.
 
 ---
 
