@@ -497,8 +497,9 @@
     return boardEl.querySelector('.cell[data-r="' + r + '"][data-c="' + c + '"]');
   }
 
-  /* Lay each vessel's artwork over the cells it occupies. */
-  function renderShipLayer(boardEl, board, show) {
+  /* Lay each vessel's artwork over the cells it occupies. On the placement board each
+     vessel also gets a turn handle on its bow and a name tag that shows on hover. */
+  function renderShipLayer(boardEl, board, show, interactive) {
     var layer = boardEl.querySelector(".ship-layer");
     if (!layer) return;
     layer.innerHTML = "";
@@ -512,6 +513,7 @@
       var boxH = last.offsetTop + last.offsetHeight - first.offsetTop;
       var el = document.createElement("div");
       el.className = "vessel-wrap" + (ship.sunk ? " sunk" : "");
+      el.dataset.ship = String(ship.id);
       el.style.left = first.offsetLeft + "px";
       el.style.top = first.offsetTop + "px";
       el.style.width = (ship.horizontal ? boxW : boxH) + "px";
@@ -522,7 +524,59 @@
       }
       el.innerHTML = shipSvg(ship.size);
       layer.appendChild(el);
+      if (interactive) layer.appendChild(turnHandle(ship, first));
     });
+  }
+
+  /* The bow handle: a click target sitting on the vessel's leading cell that turns it. */
+  function turnHandle(ship, bowCell) {
+    var handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "turn-handle";
+    handle.dataset.ship = String(ship.id);
+    handle.style.left = (bowCell.offsetLeft + bowCell.offsetWidth / 2) + "px";
+    handle.style.top = (bowCell.offsetTop + bowCell.offsetHeight / 2) + "px";
+    handle.title = "Turn the " + ship.name;
+    handle.setAttribute("aria-label", "Turn the " + ship.name +
+      " (currently " + (ship.horizontal ? "across" : "down") + ")");
+    handle.innerHTML = ROTATE_ICON +
+      '<span class="handle-tag">' + escapeHtml(ship.name) + "</span>";
+    // The handle covers the bow cell, so it has to start drags as well as turns; it
+    // resolves the gesture itself rather than letting the board's endDrag see it.
+    var byMouse = false;
+    handle.addEventListener("mousedown", function (e) {
+      placement.drag = { ship: ship, offset: 0 };
+      placement.moved = false;
+      e.preventDefault();
+    });
+    handle.addEventListener("mouseup", function (e) {
+      e.stopPropagation();
+      if (!placement.drag) return;
+      var moved = placement.moved;
+      byMouse = true;
+      clearPreview();
+      placement.drag = null;
+      placement.moved = false;
+      if (moved) renderPlacement();
+      else rotateShip(ship);
+    });
+    handle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (byMouse) { byMouse = false; return; }
+      rotateShip(ship);
+    });
+    handle.addEventListener("mouseenter", function () { highlightShip(ship.id); });
+    handle.addEventListener("mouseleave", function () { highlightShip(null); });
+    return handle;
+  }
+
+  /* Tie a vessel on the board to its row in the fleet list, so the two 3-cell
+     vessels can be told apart at a glance. */
+  function highlightShip(id) {
+    var each = function (nodes, fn) { Array.prototype.forEach.call(nodes, fn); };
+    var lit = function (el) { el.classList.toggle("lit", id !== null && el.dataset.ship === String(id)); };
+    each($("board-placement").querySelectorAll(".vessel-wrap, .turn-handle"), lit);
+    each($("placement-fleet").querySelectorAll("li"), lit);
   }
 
   /* Impact effects: blood/explosion on a hit, splash/smoke on a miss. */
@@ -583,7 +637,7 @@
         }
       }
     }
-    renderShipLayer(boardEl, board, showShips);
+    renderShipLayer(boardEl, board, showShips, boardEl.id === "board-placement");
   }
 
   function flash(boardEl, cells) {
@@ -600,6 +654,7 @@
     ul.innerHTML = "";
     board.ships.forEach(function (s) {
       var li = document.createElement("li");
+      li.dataset.ship = s.id;
       if (s.sunk) li.classList.add("sunk-item");
       var pips = "";
       for (var i = 0; i < s.size; i++) pips += i < s.hits ? "●" : "○";
@@ -616,6 +671,8 @@
         btn.innerHTML = ROTATE_ICON + "<span>" + (s.horizontal ? "Across" : "Down") + "</span>";
         btn.addEventListener("click", function () { rotateShip(s); });
         li.appendChild(btn);
+        li.addEventListener("mouseenter", function () { highlightShip(s.id); });
+        li.addEventListener("mouseleave", function () { highlightShip(null); });
       } else {
         var pipsEl = document.createElement("span");
         pipsEl.className = "pips";
@@ -757,10 +814,17 @@
 
     boardEl.addEventListener("mouseup", endDrag);
     boardEl.addEventListener("mouseleave", function () {
+      highlightShip(null);
       if (!placement.drag) return;
       clearPreview();
       placement.drag = null;
       placement.moved = false;
+    });
+
+    boardEl.addEventListener("mouseover", function (e) {
+      if (placement.drag) return;
+      var hit = placementCellFromEvent(e);
+      highlightShip(hit ? state.playerBoard.shipAt[idx(hit.r, hit.c)] : null);
     });
   }
 

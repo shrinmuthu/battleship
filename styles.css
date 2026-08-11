@@ -388,6 +388,62 @@ button { font-family: inherit; }
   50% { transform: translateY(-2%); }
 }
 .vessel-wrap[style*="rotate"] { animation: none; }
+.vessel-wrap.lit { filter: drop-shadow(0 0 7px rgba(232, 201, 106, 0.95)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
+
+/* bow handle: click the vessel's leading cell to turn it */
+.turn-handle {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 201, 106, 0.55);
+  background: rgba(6, 26, 40, 0.82);
+  color: var(--gold);
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  z-index: 4;
+}
+.turn-handle:hover,
+.turn-handle:focus-visible,
+.turn-handle.lit {
+  opacity: 1;
+  background: rgba(232, 201, 106, 0.22);
+  transform: translate(-50%, -50%) scale(1.12);
+}
+.turn-handle .rotate-icon { width: 17px; height: 17px; }
+
+/* name tag on the handle, so the two 3-cell vessels can be told apart */
+.handle-tag {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 201, 106, 0.45);
+  background: rgba(4, 18, 30, 0.94);
+  color: var(--marble);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.turn-handle:hover .handle-tag,
+.turn-handle:focus-visible .handle-tag,
+.turn-handle.lit .handle-tag { opacity: 1; }
+
+.fleet-list li.lit {
+  border-color: var(--gold);
+  background: rgba(232, 201, 106, 0.14);
+}
 
 /* resolved cells burn through the hull above them */
 .cell.resolved { z-index: 3; }
