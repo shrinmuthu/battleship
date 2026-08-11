@@ -21,13 +21,17 @@ python3 -m http.server 8000
 - Each side has **2 catapult volleys**. A volley strikes a plus-shaped 5-cell area (target cell
   plus the four orthogonally adjacent cells); cells outside the sea are simply not hit.
 - Each turn you fire **either** one arrow **or** one catapult — never both.
+- Hits and misses play impact effects: a blood splat for an arrow hit, an explosion for a catapult
+  hit, a small splash for a missed arrow and rolling smoke for a missed volley.
+- Vessels are drawn as ancient galleys — hull, ram, oars, shields and sail — spanning the cells
+  they occupy, rather than plain blocks.
 - Live stats panel shows the rival's shots, hits, misses, hit/miss ratio, accuracy, vessels sunk
   and catapults remaining, for the current session only.
 
 ## Setup flow
 
-1. Enter your name. If that name has played in this browser before, the herald greets you back
-   and shows your win/loss record and current streak.
+1. Enter your name and choose a difficulty (Easy, Medium or Hard). If that name has played in
+   this browser before, the herald greets you back and shows your win/loss record and streak.
 2. Pick a character for yourself and a separate one for your rival — Odysseus, Athena, Poseidon,
    Circe, Achilles or Hermes (`assets/avatars/`) — or upload your own image (max 4 MB).
 3. Arrange your fleet (drag to move, click to turn, or let the harbour master arrange it),
@@ -39,12 +43,13 @@ Records are stored in `localStorage` under `odyssey.captains.v1`, keyed by the l
 holding wins, losses, current streak (positive = wins, negative = losses) and best win streak.
 They persist only in the browser they were created in; there is no account or password.
 
-## AI
+## AI and difficulty
 
-The rival hunts on a parity grid biased toward open water, switches to targeting mode after a
-hit, locks onto the vessel's axis once two hits line up, and spends its catapults deliberately —
-around a wounded vessel where a plus-shaped volley is likely to finish it, or over dense
-unexplored water if the hunt drags on.
+| Difficulty | Behaviour |
+| --- | --- |
+| Easy (Deckhand) | Fires at random cells, follows up a hit only about half the time and lets its catapults fly on a whim. |
+| Medium (Helmsman) | Searches at random but always works around a hit until the vessel is sunk; saves catapults for a wounded vessel. |
+| Hard (Strategos) | Hunts on a parity grid biased toward open water, locks onto the vessel's axis once two hits line up, and spends catapults deliberately — around a wounded vessel or over dense unexplored water if the hunt drags on. |
 
 ## Files
 

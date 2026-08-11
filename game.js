@@ -28,6 +28,63 @@
 
   var MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
+  /* How the rival thinks. hunt: how it searches, refine: whether it locks onto a vessel's
+     axis, targetChance: how reliably it follows up a hit, catapult: how it spends volleys. */
+  var DIFFICULTIES = {
+    easy: {
+      id: "easy", label: "Easy", title: "Deckhand",
+      blurb: "Fires almost at random and often loses the trail after a hit.",
+      hunt: "random", refine: false, targetChance: 0.45, catapult: "random"
+    },
+    medium: {
+      id: "medium", label: "Medium", title: "Helmsman",
+      blurb: "Searches at random but always hunts down a vessel it has struck.",
+      hunt: "random", refine: false, targetChance: 1, catapult: "loose"
+    },
+    hard: {
+      id: "hard", label: "Hard", title: "Strategos",
+      blurb: "Searches a parity grid, locks onto a hull's axis and times its catapults.",
+      hunt: "parity", refine: true, targetChance: 1, catapult: "smart"
+    }
+  };
+  var DIFFICULTY_ORDER = ["easy", "medium", "hard"];
+
+  /* An ancient galley drawn to span `size` cells: hull, ram, oars, sail and shields. */
+  function shipSvg(size) {
+    var w = size * 100;
+    var oars = "";
+    for (var x = 46; x < w - 40; x += 46) {
+      oars += '<path d="M' + x + ' 58 l-16 30"/>';
+    }
+    var shields = "";
+    for (var s = 60; s < w - 50; s += 52) {
+      shields += '<circle cx="' + s + '" cy="44" r="9"/>';
+    }
+    var mastX = Math.round(w * 0.45);
+    var sail = size >= 3
+      ? '<g class="sail">' +
+        '<path d="M' + mastX + ' 36 L' + mastX + ' 4" stroke="#7c5a34" stroke-width="5" stroke-linecap="round"/>' +
+        '<path d="M' + (mastX - 34) + ' 8 H' + (mastX + 34) + '" stroke="#7c5a34" stroke-width="5" stroke-linecap="round"/>' +
+        '<path d="M' + (mastX - 32) + ' 10 H' + (mastX + 32) + ' Q' + (mastX + 20) + ' 34 ' + mastX + ' 34 Q' +
+          (mastX - 20) + ' 34 ' + (mastX - 32) + ' 10 Z" fill="#f0e2c6" opacity="0.92"/>' +
+        '<path d="M' + mastX + ' 12 v20 M' + (mastX - 16) + ' 12 v16 M' + (mastX + 16) + ' 12 v16"' +
+          ' stroke="#c8442c" stroke-width="3" opacity="0.65"/>' +
+        '</g>'
+      : "";
+    return '<svg class="vessel" viewBox="0 0 ' + w + ' 100" preserveAspectRatio="none">' +
+      '<g class="oars" stroke="#8a6742" stroke-width="5" stroke-linecap="round">' + oars + "</g>" +
+      '<path class="hull" d="M14 40 H' + (w - 30) + ' L' + (w - 6) + ' 56 L' + (w - 30) + ' 74 ' +
+        'C' + (w * 0.6) + ' 88, ' + (w * 0.25) + ' 88, 40 74 C 22 66, 14 54, 14 40 Z" ' +
+        'fill="#b8946a" stroke="#6d4d2c" stroke-width="3"/>' +
+      '<path d="M14 40 C 2 24, 12 8, 30 10 C 20 16, 18 28, 26 38 Z" fill="#8a6742"/>' +
+      '<path d="M20 52 H' + (w - 34) + '" stroke="#8a6742" stroke-width="4" opacity="0.7"/>' +
+      '<g fill="#c8442c" stroke="#e8c96a" stroke-width="2.5" opacity="0.9">' + shields + "</g>" +
+      '<g fill="#f3ecdd"><ellipse cx="' + (w - 34) + '" cy="48" rx="9" ry="7"/></g>' +
+      '<circle cx="' + (w - 32) + '" cy="48" r="3.5" fill="#1a1207"/>' +
+      sail +
+      "</svg>";
+  }
+
   var SHIP_ICON =
     '<svg class="ship-icon" viewBox="0 0 60 34" aria-hidden="true">' +
     '<path d="M4 20 h52 l-8 11 h-36z" fill="#b8946a"/>' +
@@ -247,6 +304,7 @@
       aiBoard: createBoard(),       // the AI's fleet, attacked by the player
       playerCatapults: CATAPULTS_PER_PLAYER,
       aiCatapults: CATAPULTS_PER_PLAYER,
+      difficulty: currentDifficulty,
       turn: "player",
       busy: false,
       over: false,
@@ -258,6 +316,37 @@
       },
       you: { shots: 0, hits: 0, misses: 0, sunk: 0, turns: 0 }
     };
+  }
+
+  // ---------------------------------------------------------------- difficulty
+  var currentDifficulty = "medium";
+
+  function diff() { return DIFFICULTIES[(state && state.difficulty) || currentDifficulty]; }
+
+  function buildDifficultyOptions() {
+    var box = $("difficulty-options");
+    box.innerHTML = "";
+    DIFFICULTY_ORDER.forEach(function (id) {
+      var d = DIFFICULTIES[id];
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "difficulty-option";
+      btn.setAttribute("role", "radio");
+      btn.dataset.difficulty = id;
+      btn.innerHTML = "<strong>" + d.label + "</strong><span>" + escapeHtml(d.blurb) + "</span>";
+      btn.addEventListener("click", function () { selectDifficulty(id); });
+      box.appendChild(btn);
+    });
+    selectDifficulty(currentDifficulty);
+  }
+
+  function selectDifficulty(id) {
+    currentDifficulty = id;
+    Array.prototype.forEach.call($("difficulty-options").children, function (btn) {
+      var on = btn.dataset.difficulty === id;
+      btn.classList.toggle("selected", on);
+      btn.setAttribute("aria-checked", on ? "true" : "false");
+    });
   }
 
   // ---------------------------------------------------------------- avatars
@@ -330,6 +419,10 @@
   // ---------------------------------------------------------------- board rendering
   function buildBoardEl(el) {
     el.innerHTML = "";
+    var layer = document.createElement("div");
+    layer.className = "ship-layer";
+    layer.setAttribute("aria-hidden", "true");
+    el.appendChild(layer);
     var corner = document.createElement("div");
     corner.className = "coord";
     el.appendChild(corner);
@@ -360,6 +453,60 @@
     return boardEl.querySelector('.cell[data-r="' + r + '"][data-c="' + c + '"]');
   }
 
+  /* Lay each vessel's artwork over the cells it occupies. */
+  function renderShipLayer(boardEl, board, show) {
+    var layer = boardEl.querySelector(".ship-layer");
+    if (!layer) return;
+    layer.innerHTML = "";
+    if (!show) return;
+    board.ships.forEach(function (ship) {
+      if (!ship.cells.length) return;
+      var first = cellEl(boardEl, ship.cells[0].r, ship.cells[0].c);
+      var last = cellEl(boardEl, ship.cells[ship.cells.length - 1].r, ship.cells[ship.cells.length - 1].c);
+      if (!first || !last) return;
+      var boxW = last.offsetLeft + last.offsetWidth - first.offsetLeft;
+      var boxH = last.offsetTop + last.offsetHeight - first.offsetTop;
+      var el = document.createElement("div");
+      el.className = "vessel-wrap" + (ship.sunk ? " sunk" : "");
+      el.style.left = first.offsetLeft + "px";
+      el.style.top = first.offsetTop + "px";
+      el.style.width = (ship.horizontal ? boxW : boxH) + "px";
+      el.style.height = (ship.horizontal ? boxH : boxW) + "px";
+      if (!ship.horizontal) {
+        el.style.transformOrigin = "0 0";
+        el.style.transform = "rotate(90deg) translateY(-100%)";
+      }
+      el.innerHTML = shipSvg(ship.size);
+      layer.appendChild(el);
+    });
+  }
+
+  /* Impact effects: blood/explosion on a hit, splash/smoke on a miss. */
+  function spawnFx(boardEl, r, c, kind) {
+    var cell = cellEl(boardEl, r, c);
+    if (!cell) return;
+    var fx = document.createElement("div");
+    fx.className = "fx fx-" + kind;
+    fx.style.left = (cell.offsetLeft + cell.offsetWidth / 2) + "px";
+    fx.style.top = (cell.offsetTop + cell.offsetHeight / 2) + "px";
+    var parts = "";
+    for (var i = 0; i < 8; i++) parts += '<span class="p p' + i + '"></span>';
+    fx.innerHTML = '<span class="core"></span>' + parts;
+    boardEl.appendChild(fx);
+    setTimeout(function () {
+      if (fx.parentNode) fx.parentNode.removeChild(fx);
+    }, kind === "smoke" ? 2200 : 1400);
+  }
+
+  function playImpacts(boardEl, results, weapon) {
+    results.forEach(function (res) {
+      var kind = res.result === "hit"
+        ? (weapon === "bomb" ? "boom" : "blood")
+        : (weapon === "bomb" ? "smoke" : "splash");
+      spawnFx(boardEl, res.r, res.c, kind);
+    });
+  }
+
   function renderBoard(boardEl, board, showShips) {
     for (var r = 0; r < SIZE; r++) {
       for (var c = 0; c < SIZE; c++) {
@@ -381,6 +528,7 @@
         }
       }
     }
+    renderShipLayer(boardEl, board, showShips);
   }
 
   function flash(boardEl, cells) {
@@ -627,6 +775,7 @@
       tallyPlayerResults(results);
       clearBlastPreview();
       flash($("board-enemy"), area);
+      playImpacts($("board-enemy"), results, "bomb");
       var hits = results.filter(function (x) { return x.result === "hit"; }).length;
       log("Catapult volley on " + coordLabel(r, c) + " — " + plural(hits, "hit", "hits") +
           " across " + plural(results.length, "new cell", "new cells") + ".", "you");
@@ -646,6 +795,7 @@
     state.you.turns++;
     tallyPlayerResults([single]);
     flash($("board-enemy"), [{ r: r, c: c }]);
+    playImpacts($("board-enemy"), [single], "shot");
     log(single.result === "hit"
       ? "Your arrow strikes a hull at " + coordLabel(r, c) + "."
       : "Your arrow falls into open water at " + coordLabel(r, c) + ".", "you");
@@ -684,8 +834,15 @@
     return board.ships.reduce(function (m, s) { return (!s.sunk && s.size > m) ? s.size : m; }, 2);
   }
 
+  function randomFreeCell(board) {
+    var free = unknownCells(board);
+    if (free.length === 0) return null;
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
   /* Hunt on a parity grid tuned to the smallest vessel still afloat. */
   function huntCell(board) {
+    if (diff().hunt === "random") return randomFreeCell(board);
     var free = unknownCells(board);
     if (free.length === 0) return null;
     var smallest = board.ships.reduce(function (m, s) { return (!s.sunk && s.size < m) ? s.size : m; }, SIZE);
@@ -715,6 +872,7 @@
 
   /* Once two hits line up, restrict the queue to that line. */
   function refineTargets(board) {
+    if (!diff().refine) return;
     var stack = state.ai.hitStack;
     if (stack.length < 2) return;
     var sameRow = stack.every(function (p) { return p.r === stack[0].r; });
@@ -764,10 +922,25 @@
   function aiDecide() {
     var board = state.playerBoard; // the AI attacks the player's board
     var left = state.aiCatapults;
+    var mode = diff();
     refineTargets(board);
     state.ai.targets = state.ai.targets.filter(function (p) {
       return inBounds(p.r, p.c) && board.shots[idx(p.r, p.c)] === null;
     });
+
+    if (mode.catapult === "random") {
+      // A careless rival: fires its volleys on a whim, wherever it happens to look.
+      if (left > 0 && state.ai.turns >= 4 && Math.random() < 0.2) {
+        var loose = randomFreeCell(board);
+        if (loose) return { type: "bomb", r: loose.r, c: loose.c };
+      }
+      if (state.ai.targets.length > 0 && Math.random() < mode.targetChance) {
+        var easyTarget = state.ai.targets.shift();
+        return { type: "shot", r: easyTarget.r, c: easyTarget.c };
+      }
+      var rnd = randomFreeCell(board);
+      return rnd ? { type: "shot", r: rnd.r, c: rnd.c } : null;
+    }
 
     if (left > 0 && state.ai.hitStack.length > 0) {
       // A vessel is wounded: a plus-shaped volley nearby often finishes it.
@@ -778,7 +951,8 @@
         });
       });
       var pick = bestBombTarget(board, around);
-      if (pick && pick.score >= 6) return { type: "bomb", r: pick.cell.r, c: pick.cell.c };
+      var woundedThreshold = mode.catapult === "smart" ? 6 : 7;
+      if (pick && pick.score >= woundedThreshold) return { type: "bomb", r: pick.cell.r, c: pick.cell.c };
     }
 
     if (state.ai.targets.length > 0) {
@@ -788,7 +962,7 @@
 
     // Hunting: spend a volley when the search drags on and a large vessel is still out there.
     var free = unknownCells(board);
-    if (left > 0 && state.ai.turns >= 6 && largestAfloat(board) >= 3) {
+    if (left > 0 && mode.catapult === "smart" && state.ai.turns >= 6 && largestAfloat(board) >= 3) {
       var interior = free.filter(function (p) {
         return p.r > 0 && p.r < SIZE - 1 && p.c > 0 && p.c < SIZE - 1;
       });
@@ -835,6 +1009,7 @@
         if (res) { results.push(res); registerAiResult(board, res); }
       });
       flash($("board-own"), area);
+      playImpacts($("board-own"), results, "bomb");
       var hits = results.filter(function (x) { return x.result === "hit"; }).length;
       log(state.aiName + " launches a catapult volley on " + coordLabel(move.r, move.c) +
           " — " + plural(hits, "hit", "hits") + ".", "ai");
@@ -851,6 +1026,7 @@
       }
       registerAiResult(board, single);
       flash($("board-own"), [{ r: single.r, c: single.c }]);
+      playImpacts($("board-own"), [single], "shot");
       log(single.result === "hit"
         ? state.aiName + "'s arrow strikes your fleet at " + coordLabel(single.r, single.c) + "."
         : state.aiName + "'s arrow falls into open water at " + coordLabel(single.r, single.c) + ".", "ai");
@@ -897,6 +1073,7 @@
       ["Your accuracy", state.you.shots ? Math.round((state.you.hits / state.you.shots) * 100) + "%" : "0%"],
       [state.aiName + "'s shots", state.ai.shots],
       [state.aiName + "'s accuracy", state.ai.shots ? Math.round((state.ai.hits / state.ai.shots) * 100) + "%" : "0%"],
+      ["Difficulty", diff().label],
       ["Vessels you sank", state.you.sunk],
       ["Vessels you lost", state.ai.sunk]
     ].forEach(function (pair) {
@@ -945,8 +1122,8 @@
 
     $("placement-avatar").src = state.playerAvatar;
     $("placement-name").textContent = state.playerName + "'s waters";
-    renderPlacement();
     showScreen("screen-placement");
+    renderPlacement();
   }
 
   function startGame() {
@@ -954,12 +1131,14 @@
     $("chip-ai-img").src = state.aiAvatar;
     $("chip-player-name").textContent = state.playerName;
     $("chip-ai-name").textContent = state.aiName;
+    $("chip-ai-difficulty").textContent = diff().label + " — " + diff().title;
     updateChipRecord();
     $("log").innerHTML = "";
     $("overlay").hidden = true;
     state.turn = "player";
     var rec = getRecord(state.playerName);
     log("The fleets meet at dawn — " + state.playerName + " strikes first.", "big");
+    log(state.aiName + " sails as a " + diff().title + " (" + diff().label + ").", "ai");
     if (rec && (rec.wins || rec.losses)) log("Herald's record for " + state.playerName + ": " + recordSummary(rec) + ".", "you");
     showScreen("screen-game");
     refreshGame();
@@ -969,6 +1148,7 @@
   function init() {
     state = freshState();
 
+    buildDifficultyOptions();
     buildAvatarOptions("player");
     buildAvatarOptions("ai");
     wireUpload("player");
@@ -1005,6 +1185,17 @@
     });
 
     $("btn-confirm-placement").addEventListener("click", startGame);
+
+    // Vessel artwork is positioned in pixels, so it must be laid out again on resize.
+    var resizeTimer = null;
+    window.addEventListener("resize", function () {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (!state) return;
+        if ($("screen-placement").classList.contains("active")) renderPlacement();
+        else if ($("screen-game").classList.contains("active")) refreshGame();
+      }, 120);
+    });
 
     $("board-enemy").addEventListener("click", onEnemyBoardClick);
     $("board-enemy").addEventListener("mousemove", onEnemyBoardHover);

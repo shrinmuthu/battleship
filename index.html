@@ -113,6 +113,11 @@
         <div id="welcome-back" class="welcome" hidden></div>
       </div>
 
+      <div class="field">
+        <label id="difficulty-label">Choose your rival's skill</label>
+        <div class="difficulty-options" id="difficulty-options" role="radiogroup" aria-labelledby="difficulty-label"></div>
+      </div>
+
       <div class="chooser-grid">
         <div class="chooser">
           <h2>Your hero</h2>
@@ -151,6 +156,7 @@
           <li>An arrow strikes a single cell. A catapult strikes 5 cells in a plus shape: the target cell and the four cells directly above, below, left and right of it.</li>
           <li>You and your rival each get <strong>2 catapult volleys</strong> for the whole battle, so spend them wisely.</li>
           <li>Sink all 5 enemy vessels to win.</li>
+          <li>Pick a difficulty above: <strong>Easy</strong> fires nearly at random, <strong>Medium</strong> hunts down any vessel it hits, <strong>Hard</strong> searches methodically and times its catapults.</li>
         </ul>
       </div>
 
@@ -200,6 +206,7 @@
         <div>
           <div class="chip-name" id="chip-ai-name">Rival</div>
           <div class="chip-sub">Vessels afloat: <span id="chip-ai-ships">5</span></div>
+          <div class="chip-sub" id="chip-ai-difficulty"></div>
         </div>
         <img class="chip-avatar" id="chip-ai-img" alt="" />
       </div>
