@@ -2,8 +2,10 @@
 
 Revisions tested: the first full pass ran on `03d45e1` (turn buttons); bugs 1 and 2 were fixed in
 `a2fa3a0` and re-verified there. A second full regression pass then ran on `a528946` for deployment
-readiness and found one further (cosmetic) defect, bug 6, fixed afterwards. Served throughout with
-`python3 -m http.server 8000`. Line numbers below refer to the revision each bug was found on.
+readiness and found one further (cosmetic) defect, bug 6, fixed afterwards. A focused pass on the bow
+turn handle at `f9544c2` and a **third full regression at `3c3d9c2`** both found no new defects and
+confirmed bugs 1-6 are still fixed. Served throughout with `python3 -m http.server 8000`. Line numbers
+below refer to the revision each bug was found on.
 Full E2E + edge-case + audio passes, plus a GitHub Pages subpath check. `node --check game.js` and
 `node --check audio.js` both pass. Six defects total: two from the first full pass, one cosmetic one from
 the second, and three caught earlier while building the difficulty, audio and navigation features. All are
@@ -17,6 +19,9 @@ fixed; everything else planned passed (see "Verified" at the bottom).
 | 4 | The previous battle's enemy board could paint on the way into a new one | Fixed |
 | 5 | Background music threw `AudioParam` errors and dropped notes | Fixed |
 | 6 | Rival chip spilled past the top-bar panel between 621 px and 660 px | Fixed |
+
+All six were re-confirmed fixed in the third full regression at `3c3d9c2`; see
+[Regression history](#regression-history).
 
 ---
 
@@ -233,6 +238,50 @@ The whole narrow-screen block, top bar and audio bar alike, moved from `@media (
 Splitting the two apart (top bar at 680 px, audio bar left at 620 px) was tried first and rejected: with the
 bar wrapped, the chips move up under the fixed audio bar, so the still-labelled "Sound" pill landed on the
 top-right corner of the rival's name throughout the 621–680 px band. Both breakpoints have to move together.
+
+---
+
+## Regression history
+
+| Pass | Revision | Scope | Outcome |
+| --- | --- | --- | --- |
+| 1 — full | `03d45e1` | Whole app | Bugs 1 and 2 found; fixed and re-verified in `a2fa3a0` |
+| 2 — full | `a528946` | Whole app + Pages subpath | Bug 6 found (cosmetic); fixed afterwards |
+| 3 — focused | `f9544c2` | Bow turn handle and placement gestures | No defects |
+| 4 — full | `3c3d9c2` | Whole app, bugs 1-6 re-checked | No defects |
+
+### Pass 4 — full regression at `3c3d9c2`
+
+App source is byte-identical to `f9544c2` (`3c3d9c2` only touches the testing skill), so this pass
+re-confirms behaviour rather than testing a change. Driven with real mouse and keyboard gestures in Chrome,
+with CDP used only for geometry, storage, viewport emulation and instrumentation.
+
+Re-checks of the known bugs:
+
+- **Bug 1** — a boxed-in War Trireme flashes exactly `ship.size` cells from ~30 ms to ~450 ms, from both the
+  bow handle and a board click, alongside the note "The War Trireme has no room to turn — move it first."
+- **Bug 2 / bug 6** — battle screen at 1400, 900, 682, 681, 680, 679, 620, 500 and 420 px: `scrollX` stays 0,
+  the rival chip stays inside the panel, boards stay square, both audio pills stay hit-testable, and
+  `.audio-label` flips exactly at 680 px.
+- **Bug 3** — quitting inside the 850 ms AI window and starting a new game leaves `#ai-shots` at 0 with no
+  resolved cells on the player's board 3.2 s later.
+- **Bug 4** — after "Sail again": 0 resolved cells on both boards, no enemy hull art, catapults back to 2.
+- **Bug 5** — music on gives a sustained analyser peak of 0.079-0.12 over 20 s with no `AudioParam` errors;
+  music off drops it to 0.000.
+
+Also covered: full games to a loss on Hard and Medium and to a win on Easy (overlays, difficulty in the final
+stats, exactly one record written per finished game); catapult clipping at a corner (3 cells) and the top edge
+(4 cells) with the counter reaching 0 and the weapon reverting to Arrow; a fully-resolved blast area refused
+without consuming a volley; AI sampling at all three difficulties with zero duplicate coordinates and Hard
+hunting on parity (23 of 25 hunt shots); all four impact effects spawning, staying `pointer-events: none` and
+being removed after 1.4-2.2 s, and suppressed under `prefers-reduced-motion`; audio flags persisting across
+reload; mid-battle exit writing no record; name validation and the 4 MB / non-image upload rejections; and the
+Hall of Captains sort and clear. A session instrumented from page load through to the endgame overlay logged
+zero console errors, warnings or page errors.
+
+**Known UX nit (not a defect):** activating a bow turn handle with Enter or Space turns the vessel exactly
+once, but `renderPlacement()` rebuilds the placement DOM and focus falls back to `BODY`, so a keyboard user
+must Tab back to the handle to turn the same vessel again.
 
 ---
 
